@@ -11,13 +11,18 @@
 
 use core::cell::RefCell;
 
+
 use cortex_m::delay::Delay;
 use cortex_m::interrupt::free;
 use cortex_m::interrupt::Mutex;
+use embedded_hal::watchdog;
 // The macro for our start-up function
 use rp_pico::entry;
 
+
 use rp_pico::hal::clocks::ClocksManager;
+use rp_pico::hal::clocks::SystemClock;
+use rp_pico::hal::clocks::UsbClock;
 // The macro for marking our interrupt functions
 use rp_pico::hal::pac::interrupt;
 
@@ -33,14 +38,24 @@ use rp_pico::hal::pac;
 // A shorter alias for the Hardware Abstraction Layer, which provides
 // higher-level drivers.
 use rp_pico::hal;
-use rp_pico::pac::Peripherals;
 
+use rp_pico::hal::sio::SioGpioBank0;
+use rp_pico::hal::Sio;
+use rp_pico::hal::Watchdog;
+use rp_pico::pac::IO_BANK0;
+use rp_pico::pac::PADS_BANK0;
+use rp_pico::pac::SIO;
+use rp_pico::pac::SYST;
+use rp_pico::pac::USBCTRL_DPRAM;
+use rp_pico::pac::USBCTRL_REGS;
 use rp_pico::Pins;
 // USB Device support
 use usb_device::{class_prelude::*, prelude::*};
 
 // USB Communications Class Device support
 use usbd_serial::SerialPort;
+
+use rp_pico::hal::prelude::*;
 
 use crate::main;
 
@@ -59,7 +74,47 @@ static mut ENABLE_SERIAL: bool = false;
 type ReadFunction = fn(&mut [u8], usize);
 static READFUNC: Mutex<RefCell<Option<ReadFunction>>> = Mutex::new(RefCell::new(None));
 
-pub fn setup_serial(usb_bus: UsbBusAllocator<hal::usb::UsbBus>) {
+pub fn setup_clocks(XOSC: pac::XOSC, CLOCKS: pac::CLOCKS, PLL_SYS: pac::PLL_SYS, PLL_USB: pac::PLL_USB, RESETS: &mut pac::RESETS, watchdog: &mut Watchdog) -> ClocksManager {
+    hal::clocks::init_clocks_and_plls(
+        rp_pico::XOSC_CRYSTAL_FREQ,
+        XOSC,
+        CLOCKS,
+        PLL_SYS,
+        PLL_USB,
+        RESETS,
+        watchdog,
+    )
+    .ok()
+    .unwrap()
+}
+
+pub fn setup_delay(SYST: SYST, clocks: &ClocksManager) -> Delay {
+    cortex_m::delay::Delay::new(SYST, (clocks.system_clock.freq().to_Hz()).clone())
+}
+
+pub fn setup_sio(SIO: SIO) -> Sio {
+    hal::Sio::new(SIO)
+}
+
+pub fn setup_pins(IO_BANK0: IO_BANK0, PADS_BANK0: PADS_BANK0, gpio_bank0: SioGpioBank0, RESETS: &mut pac::RESETS) -> Pins {
+    rp_pico::Pins::new(
+        IO_BANK0,
+        PADS_BANK0,
+        gpio_bank0,
+        RESETS,
+    )
+}
+
+
+pub fn setup_serial(USBCTRL_REGS: USBCTRL_REGS, USBCTRL_DPRAM: USBCTRL_DPRAM, usb_clock: UsbClock, RESETS: &mut pac::RESETS) {
+    let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
+        USBCTRL_REGS,
+        USBCTRL_DPRAM,
+        usb_clock,
+        true,
+        RESETS,
+    ));
+
     unsafe {
         ENABLE_SERIAL = true;
 
@@ -69,7 +124,7 @@ pub fn setup_serial(usb_bus: UsbBusAllocator<hal::usb::UsbBus>) {
         // Grab a reference to the USB Bus allocator. We are promising to the
         // compiler not to take mutable access to this global variable whilst this
         // reference exists!
-        let bus_ref = unsafe { USB_BUS.as_ref().unwrap() };
+        let bus_ref = USB_BUS.as_ref().unwrap();
 
         // Set up the USB Communications Class Device driver
         let serial = SerialPort::new(bus_ref);
@@ -101,7 +156,7 @@ pub fn setup_serial(usb_bus: UsbBusAllocator<hal::usb::UsbBus>) {
 #[entry]
 fn setup() -> ! {
     // Grab our singleton objects
-    let mut pac = pac::Peripherals::take().unwrap();
+    let pac = pac::Peripherals::take().unwrap();
     let core = pac::CorePeripherals::take().unwrap();
 
     main(pac, core);

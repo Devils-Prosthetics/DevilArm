@@ -7,12 +7,9 @@
 use embedded_hal::digital::v2::OutputPin;
 use rp_pico::hal;
 
-// USB Device support
-use usb_device::class_prelude::*;
-
 use rp_pico::pac::{Peripherals, CorePeripherals};
-use setup::{setup_serial, Serial};
-use rp_pico::hal::prelude::*;
+use setup::{setup_clocks, setup_delay, setup_pins, setup_serial, setup_sio, Serial};
+
 
 mod setup;
 
@@ -34,41 +31,12 @@ pub fn main(mut pac: Peripherals, core: CorePeripherals) -> ! {
 
     let mut watchdog = hal::Watchdog::new(pac.WATCHDOG);
 
-    let clocks = hal::clocks::init_clocks_and_plls(
-        rp_pico::XOSC_CRYSTAL_FREQ,
-        pac.XOSC,
-        pac.CLOCKS,
-        pac.PLL_SYS,
-        pac.PLL_USB,
-        &mut pac.RESETS,
-        &mut watchdog,
-    )
-    .ok()
-    .unwrap();
+    let clocks = setup_clocks(pac.XOSC, pac.CLOCKS, pac.PLL_SYS, pac.PLL_USB, &mut pac.RESETS, &mut watchdog);
+    let mut delay = setup_delay(core.SYST, &clocks);
+    let sio = setup_sio(pac.SIO);
+    let pins = setup_pins(pac.IO_BANK0, pac.PADS_BANK0, sio.gpio_bank0, &mut pac.RESETS);
 
-
-    let mut delay = cortex_m::delay::Delay::new(core.SYST, (&clocks.system_clock.freq().to_Hz()).clone());
-
-    let sio = hal::Sio::new(pac.SIO);
-
-    let pins = rp_pico::Pins::new(
-        pac.IO_BANK0,
-        pac.PADS_BANK0,
-        sio.gpio_bank0,
-        &mut pac.RESETS,
-    );
-
-    // Set up the USB driver
-    let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
-        pac.USBCTRL_REGS,
-        pac.USBCTRL_DPRAM,
-        clocks.usb_clock,
-        true,
-        &mut pac.RESETS,
-    ));
-    
-
-    setup_serial(usb_bus);
+    setup_serial(pac.USBCTRL_REGS, pac.USBCTRL_DPRAM, clocks.usb_clock, &mut pac.RESETS);
 
     Serial::read(read);
 
