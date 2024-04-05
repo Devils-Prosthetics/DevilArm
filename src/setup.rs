@@ -11,14 +11,12 @@
 
 use core::cell::RefCell;
 
-
 use cortex_m::delay::Delay;
 use cortex_m::interrupt::free;
 use cortex_m::interrupt::Mutex;
 use embedded_hal::watchdog;
 // The macro for our start-up function
 use rp_pico::entry;
-
 
 use rp_pico::hal::clocks::ClocksManager;
 use rp_pico::hal::clocks::SystemClock;
@@ -40,8 +38,10 @@ use rp_pico::hal::pac;
 use rp_pico::hal;
 
 use rp_pico::hal::sio::SioGpioBank0;
+use rp_pico::hal::Adc;
 use rp_pico::hal::Sio;
 use rp_pico::hal::Watchdog;
+use rp_pico::pac::ADC;
 use rp_pico::pac::IO_BANK0;
 use rp_pico::pac::PADS_BANK0;
 use rp_pico::pac::SIO;
@@ -59,7 +59,6 @@ use rp_pico::hal::prelude::*;
 
 use crate::main;
 
-
 /// The USB Device Driver (shared with the interrupt).
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
 
@@ -74,7 +73,14 @@ static mut ENABLE_SERIAL: bool = false;
 type ReadFunction = fn(&mut [u8], usize);
 static READFUNC: Mutex<RefCell<Option<ReadFunction>>> = Mutex::new(RefCell::new(None));
 
-pub fn setup_clocks(XOSC: pac::XOSC, CLOCKS: pac::CLOCKS, PLL_SYS: pac::PLL_SYS, PLL_USB: pac::PLL_USB, RESETS: &mut pac::RESETS, watchdog: &mut Watchdog) -> ClocksManager {
+pub fn setup_clocks(
+    XOSC: pac::XOSC,
+    CLOCKS: pac::CLOCKS,
+    PLL_SYS: pac::PLL_SYS,
+    PLL_USB: pac::PLL_USB,
+    RESETS: &mut pac::RESETS,
+    watchdog: &mut Watchdog,
+) -> ClocksManager {
     hal::clocks::init_clocks_and_plls(
         rp_pico::XOSC_CRYSTAL_FREQ,
         XOSC,
@@ -96,17 +102,25 @@ pub fn setup_sio(SIO: SIO) -> Sio {
     hal::Sio::new(SIO)
 }
 
-pub fn setup_pins(IO_BANK0: IO_BANK0, PADS_BANK0: PADS_BANK0, gpio_bank0: SioGpioBank0, RESETS: &mut pac::RESETS) -> Pins {
-    rp_pico::Pins::new(
-        IO_BANK0,
-        PADS_BANK0,
-        gpio_bank0,
-        RESETS,
-    )
+pub fn setup_pins(
+    IO_BANK0: IO_BANK0,
+    PADS_BANK0: PADS_BANK0,
+    gpio_bank0: SioGpioBank0,
+    RESETS: &mut pac::RESETS,
+) -> Pins {
+    rp_pico::Pins::new(IO_BANK0, PADS_BANK0, gpio_bank0, RESETS)
 }
 
+pub fn setup_adc(ADC: ADC, RESETS: &mut pac::RESETS) -> Adc {
+    Adc::new(ADC, RESETS)
+}
 
-pub fn setup_serial(USBCTRL_REGS: USBCTRL_REGS, USBCTRL_DPRAM: USBCTRL_DPRAM, usb_clock: UsbClock, RESETS: &mut pac::RESETS) {
+pub fn setup_serial(
+    USBCTRL_REGS: USBCTRL_REGS,
+    USBCTRL_DPRAM: USBCTRL_DPRAM,
+    usb_clock: UsbClock,
+    RESETS: &mut pac::RESETS,
+) {
     let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
         USBCTRL_REGS,
         USBCTRL_DPRAM,
@@ -128,7 +142,7 @@ pub fn setup_serial(USBCTRL_REGS: USBCTRL_REGS, USBCTRL_DPRAM: USBCTRL_DPRAM, us
 
         // Set up the USB Communications Class Device driver
         let serial = SerialPort::new(bus_ref);
-        
+
         USB_SERIAL = Some(serial);
 
         // Create a USB device with a fake VID and PID
@@ -138,7 +152,7 @@ pub fn setup_serial(USBCTRL_REGS: USBCTRL_REGS, USBCTRL_DPRAM: USBCTRL_DPRAM, us
             .serial_number("DEVILARM")
             .device_class(2) // from: https://www.usb.org/defined-class-codes
             .build();
-        
+
         // Note (safety): This is safe as interrupts haven't been started yet
         USB_DEVICE = Some(usb_dev);
 
@@ -216,5 +230,3 @@ unsafe fn USBCTRL_IRQ() {
         }
     }
 }
-
-
