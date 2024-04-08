@@ -14,19 +14,17 @@ use core::cell::RefCell;
 use cortex_m::delay::Delay;
 use cortex_m::interrupt::free;
 use cortex_m::interrupt::Mutex;
-use embedded_hal::watchdog;
+use heapless::String;
 // The macro for our start-up function
 use rp_pico::entry;
 
 use rp_pico::hal::clocks::ClocksManager;
-use rp_pico::hal::clocks::SystemClock;
 use rp_pico::hal::clocks::UsbClock;
 // The macro for marking our interrupt functions
 use rp_pico::hal::pac::interrupt;
 
 use panic_probe as _;
 
-use defmt::*;
 use defmt_rtt as _;
 
 // A shorter alias for the Peripheral Access Crate, which provides low-level
@@ -73,6 +71,34 @@ static mut ENABLE_SERIAL: bool = false;
 type ReadFunction = fn(&mut [u8], usize);
 static READFUNC: Mutex<RefCell<Option<ReadFunction>>> = Mutex::new(RefCell::new(None));
 
+pub fn write_fmt(args: core::fmt::Arguments) {
+    // Use a larger buffer if you expect longer messages, but be mindful of stack size
+    let mut data = String::<128>::new();
+
+    // This writes formatted args into our buffer
+    if core::fmt::write(&mut data, args).is_ok() {
+        // Now we can safely write the buffer to Serial
+        let _ = Serial::write(data.as_bytes());
+    }
+    // If needed, handle the error case
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($args:tt)*) => {{
+        $crate::setup::write_fmt(format_args!($($args)*));
+    }};
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\r\n"));
+    ($($args:tt)*) => ({
+        $crate::print!("{}\r\n", format_args!($($args)*));
+    });
+}
+
+#[allow(non_snake_case)]
 pub fn setup_clocks(
     XOSC: pac::XOSC,
     CLOCKS: pac::CLOCKS,
@@ -94,14 +120,22 @@ pub fn setup_clocks(
     .unwrap()
 }
 
+#[allow(non_snake_case)]
 pub fn setup_delay(SYST: SYST, clocks: &ClocksManager) -> Delay {
     cortex_m::delay::Delay::new(SYST, (clocks.system_clock.freq().to_Hz()).clone())
 }
 
+#[allow(non_snake_case)]
 pub fn setup_sio(SIO: SIO) -> Sio {
     hal::Sio::new(SIO)
 }
 
+#[allow(non_snake_case)]
+pub fn setup_adc(ADC: ADC, RESETS: &mut pac::RESETS) -> Adc {
+    Adc::new(ADC, RESETS)
+}
+
+#[allow(non_snake_case)]
 pub fn setup_pins(
     IO_BANK0: IO_BANK0,
     PADS_BANK0: PADS_BANK0,
@@ -111,10 +145,7 @@ pub fn setup_pins(
     rp_pico::Pins::new(IO_BANK0, PADS_BANK0, gpio_bank0, RESETS)
 }
 
-pub fn setup_adc(ADC: ADC, RESETS: &mut pac::RESETS) -> Adc {
-    Adc::new(ADC, RESETS)
-}
-
+#[allow(non_snake_case)]
 pub fn setup_serial(
     USBCTRL_REGS: USBCTRL_REGS,
     USBCTRL_DPRAM: USBCTRL_DPRAM,

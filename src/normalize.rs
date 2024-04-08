@@ -1,3 +1,6 @@
+use crate::print;
+use crate::println;
+
 use crate::setup::Serial;
 
 pub fn print_normalize(median: f32, iqr: f32, input: &mut [f32]) {
@@ -9,17 +12,12 @@ pub fn print_normalize(median: f32, iqr: f32, input: &mut [f32]) {
 
     normalize(input, median, iqr);
 
-    let _ = Serial::write(b"Normalized: ");
+    print!("Normalized: ");
     for (i, &value) in input.iter().enumerate() {
-        let mut buffer = dtoa::Buffer::new();
-        let value = buffer.format(value);
-        let value = value.as_bytes();
         if i < input.len() - 1 {
-            let _ = Serial::write(value);
-            let _ = Serial::write(b",");
+            print!("{value},");
         } else {
-            let _ = Serial::write(value);
-            let _ = Serial::write(b"\n");
+            println!("{value}");
         }
     }
 
