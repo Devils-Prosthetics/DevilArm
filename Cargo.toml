@@ -27,6 +27,8 @@ usb-device = "0.2.8"
 usbd-serial = "0.1.1"
 usbd-hid = "0.5.1"
 heapless = "0.8.0"
+servo-pio = "0.2.1"
+critical-section = "1.1.0"
 
 # cargo build/run
 [profile.dev]
