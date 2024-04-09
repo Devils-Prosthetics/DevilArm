@@ -9,6 +9,8 @@ use rp_pico::pac::{CorePeripherals, Peripherals};
 use sensor::{read_sensor_input, setup_adc_pins};
 use setup::{setup_adc, setup_clocks, setup_delay, setup_pins, setup_serial, setup_sio, Serial};
 
+use crate::normalize::normalize;
+
 mod normalize;
 mod sensor;
 mod setup;
@@ -75,6 +77,11 @@ pub fn main(mut pac: Peripherals, core: CorePeripherals) -> ! {
             values.0, values.1, values.2
         );
 
-        print_normalize(3.0, 1.0, &mut [1.0, 3.0, 5.0, 10.0])
+        // values to fft
+        // fft to normalize
+        // print that normalize
+
+        print_normalize(3.0, 1.0, &mut [1.0, 3.0, 5.0, 10.0]);
+        // print_sensor_output(values.0, values.1, values.2);
     }
 }

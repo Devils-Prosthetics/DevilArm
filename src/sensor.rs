@@ -1,3 +1,5 @@
+use crate::println;
+
 use embedded_hal::adc::OneShot;
 use rp_pico::hal::{
     adc::AdcPin,
@@ -49,4 +51,10 @@ pub fn read_sensor_input(
     return (pin_adc_counts_0, pin_adc_counts_1, pin_adc_counts_2);
 }
 
-pub fn print_sensor_output(values: (u16, u16, u16)) {}
+pub fn print_sensor_output(values: (u16, u16, u16)) {
+    println!("NewData");
+    println!("{}", values.0);
+    println!("{}", values.1);
+    println!("{}", values.2);
+    println!("EndData");
+}
