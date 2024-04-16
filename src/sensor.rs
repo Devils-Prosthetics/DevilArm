@@ -1,60 +1,59 @@
-use crate::println;
+use embassy_rp::adc::{Adc, Async};
+use embassy_rp::{adc};
+use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
+use embassy_sync::channel::{Channel, Sender};
+use embassy_time::Timer;
 
-use embedded_hal::adc::OneShot;
-use rp_pico::hal::{
-    adc::AdcPin,
-    gpio::{
-        bank0::{Gpio26, Gpio27, Gpio28},
-        DefaultTypeState, FunctionSio, Pin, PullNone, SioInput,
-    },
-    Adc,
-};
+use {defmt_rtt as _, panic_probe as _};
 
-pub fn setup_adc_pins(
-    gpio26: Pin<
-        Gpio26,
-        <Gpio26 as DefaultTypeState>::Function,
-        <Gpio26 as DefaultTypeState>::PullType,
-    >,
-    gpio27: Pin<
-        Gpio27,
-        <Gpio27 as DefaultTypeState>::Function,
-        <Gpio27 as DefaultTypeState>::PullType,
-    >,
-    gpio28: Pin<
-        Gpio28,
-        <Gpio28 as DefaultTypeState>::Function,
-        <Gpio28 as DefaultTypeState>::PullType,
-    >,
-) -> (
-    AdcPin<Pin<Gpio26, FunctionSio<SioInput>, PullNone>>,
-    AdcPin<Pin<Gpio27, FunctionSio<SioInput>, PullNone>>,
-    AdcPin<Pin<Gpio28, FunctionSio<SioInput>, PullNone>>,
+type Amplitudes = [u32; NUM_OF_MEASUREMENTS * 3];
+
+const NUM_OF_MEASUREMENTS: usize = 64;
+const TICKS_PER_MEASUREMENT: u64 = 100;
+pub static CHANNEL_AMPLITUDES: Channel<ThreadModeRawMutex, Amplitudes, 64> = Channel::new();
+
+#[embassy_executor::task]
+pub async fn read_adc_value(
+    mut adc: Adc<'static, Async>,
+    mut p26: adc::Channel<'static>,
+    mut p27: adc::Channel<'static>,
+    mut p28: adc::Channel<'static>,
+    tx_value: Sender<'static, ThreadModeRawMutex, Amplitudes, 64>,
 ) {
-    let mut adc_pin_0 = AdcPin::new(gpio26.into_floating_input());
-    let mut adc_pin_1 = AdcPin::new(gpio27.into_floating_input());
-    let mut adc_pin_2 = AdcPin::new(gpio28.into_floating_input());
+    let mut measurements_1 = [0f32; NUM_OF_MEASUREMENTS];
+    let mut measurements_2 = [0f32; NUM_OF_MEASUREMENTS];
+    let mut measurements_3 = [0f32; NUM_OF_MEASUREMENTS];
+    
+    let mut amplitudes = [0u32; NUM_OF_MEASUREMENTS * 3];
+    let mut pos = 0;
+    loop {
+        measurements_1[pos] = adc.read(&mut p26).await.unwrap().into();
+        measurements_2[pos] = adc.read(&mut p27).await.unwrap().into();
+        measurements_3[pos] = adc.read(&mut p28).await.unwrap().into();
 
-    return (adc_pin_0, adc_pin_1, adc_pin_2);
-}
+        pos = (pos + 1) % NUM_OF_MEASUREMENTS;
+        if pos == 0 {
+            // compute amplitudes of measurements
+            let spectrum = microfft::real::rfft_64(&mut measurements_1);
+            spectrum[0].im = 0.0;
+            for (i, a) in spectrum.iter().map(|c| c.l1_norm() as u32).enumerate() {
+                amplitudes[i] = a;
+            }
 
-pub fn read_sensor_input(
-    adc: &mut Adc,
-    adc_pin_0: &mut AdcPin<Pin<Gpio26, FunctionSio<SioInput>, PullNone>>,
-    adc_pin_1: &mut AdcPin<Pin<Gpio27, FunctionSio<SioInput>, PullNone>>,
-    adc_pin_2: &mut AdcPin<Pin<Gpio28, FunctionSio<SioInput>, PullNone>>,
-) -> (u16, u16, u16) {
-    let pin_adc_counts_0: u16 = adc.read(adc_pin_0).unwrap();
-    let pin_adc_counts_1: u16 = adc.read(adc_pin_1).unwrap();
-    let pin_adc_counts_2: u16 = adc.read(adc_pin_2).unwrap();
+            let spectrum = microfft::real::rfft_64(&mut measurements_2);
+            spectrum[0].im = 0.0;
+            for (i, a) in spectrum.iter().map(|c| c.l1_norm() as u32).enumerate() {
+                amplitudes[i + NUM_OF_MEASUREMENTS] = a;
+            }
 
-    return (pin_adc_counts_0, pin_adc_counts_1, pin_adc_counts_2);
-}
-
-pub fn print_sensor_output(values: (u16, u16, u16)) {
-    println!("NewData");
-    println!("{}", values.0);
-    println!("{}", values.1);
-    println!("{}", values.2);
-    println!("EndData");
+            let spectrum = microfft::real::rfft_64(&mut measurements_3);
+            spectrum[0].im = 0.0;
+            for (i, a) in spectrum.iter().map(|c| c.l1_norm() as u32).enumerate() {
+                amplitudes[i + NUM_OF_MEASUREMENTS * 2] = a;
+            }
+            // send amplitudes to main thread
+            tx_value.send(amplitudes).await;
+        }
+        Timer::after_ticks(TICKS_PER_MEASUREMENT).await;
+    }
 }
