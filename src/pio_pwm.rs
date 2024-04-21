@@ -9,7 +9,6 @@ use pio::{
 };
 
 pub fn to_pio_cycles(duration: Duration) -> u32 {
-    // info!("Duration given: {:?}", duration.as_pico());
     (clocks::clk_sys_freq() / 1_000_000) / 3 * duration.as_micros() as u32 // parentheses are required to prevent overflow
 }
 

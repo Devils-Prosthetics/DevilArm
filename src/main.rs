@@ -4,14 +4,12 @@
 use core::time::Duration;
 
 use crate::pio_pwm::PwmPio;
-// use crate::servo::{Servo, us_to_pio_cycles};
 use embassy_rp::peripherals::{PIO0, USB};
 use embassy_executor::Spawner;
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::gpio;
 use embassy_rp::gpio::Pull;
 use embassy_rp::pio::{InterruptHandler as PioInterruptHandler, Pio};
-use embassy_rp::pwm::{Config as PwmConfig, Pwm};
 use embassy_rp::usb::{Driver, InterruptHandler as UsbInterruptHandler};
 use embassy_rp::{adc, bind_interrupts};
 use embassy_time::Timer;
