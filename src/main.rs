@@ -1,12 +1,10 @@
 #![no_std]
 #![no_main]
 
-use core::fmt::Debug;
 use core::time::Duration;
 
 extern crate alloc;
 use crate::pio_pwm::PwmPio;
-use alloc::vec;
 use embassy_executor::Spawner;
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::gpio;

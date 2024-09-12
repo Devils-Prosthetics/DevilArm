@@ -105,4 +105,9 @@ impl<'d, T: Instance, const SM: usize> Servo<'d, T, SM> {
 
         self.pwm.write(duration);
     }
+
+    // Release the pwm struct from the servo
+    pub fn release(self) -> PwmPio<'d, T, SM> {
+        self.pwm
+    }
 }
