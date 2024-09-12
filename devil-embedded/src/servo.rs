@@ -76,7 +76,7 @@ pub struct Servo<'d, T: Instance, const SM: usize> {
     pwm: PwmPio<'d, T, SM>,
     min_pulse_width: Duration,
     max_pulse_width: Duration,
-    max_degree_rotation: u64,
+    pub max_degree_rotation: u64,
 }
 
 impl<'d, T: Instance, const SM: usize> Servo<'d, T, SM> {

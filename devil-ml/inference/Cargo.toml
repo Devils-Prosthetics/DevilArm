@@ -1,0 +1,15 @@
+[package]
+name = "devil-ml"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]
+burn = { version = "0.14", default-features = false, features = ["ndarray"] }
+
+[build-dependencies]
+burn-import = { version = "0.14" }

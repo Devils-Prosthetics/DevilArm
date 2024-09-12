@@ -1,6 +1,6 @@
 [package]
 edition = "2021"
-name = "devil_arm"
+name = "devil-embedded"
 version = "0.1.0"
 license = "MIT"
 

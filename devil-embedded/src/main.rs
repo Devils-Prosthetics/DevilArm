@@ -40,6 +40,7 @@ mod pio_pwm;
 mod sensor;
 mod servo;
 mod usb;
+mod gesture;
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
