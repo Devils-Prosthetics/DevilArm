@@ -5,4 +5,5 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-burn = { version = "0.14", features = ["wgpu"] }
+burn = { workspace = true, features = ["train", "vision"] }
+model = { path = "../model" }
