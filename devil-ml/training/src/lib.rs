@@ -1,3 +1,6 @@
+use burn::train::renderer::TrainingProgress;
+use burn::train::renderer::MetricsRenderer;
+use burn::train::renderer::MetricState;
 use burn::data::dataset::vision::MnistDataset;
 use burn::module::Module;
 use burn::record::{BinFileRecorder, CompactRecorder, FullPrecisionSettings};
@@ -36,6 +39,22 @@ fn create_artifact_dir(artifact_dir: &str) {
     std::fs::create_dir_all(artifact_dir).ok();
 }
 
+struct CustomRenderer {}
+
+impl MetricsRenderer for CustomRenderer {
+    fn update_train(&mut self, _state: MetricState) {}
+
+    fn update_valid(&mut self, _state: MetricState) {}
+
+    fn render_train(&mut self, item: TrainingProgress) {
+        dbg!(item);
+    }
+
+    fn render_valid(&mut self, item: TrainingProgress) {
+        dbg!(item);
+    }
+}
+
 pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
     create_artifact_dir(artifact_dir);
     config
@@ -67,6 +86,8 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .with_file_checkpointer(CompactRecorder::new())
         .devices(vec![device.clone()])
         .num_epochs(config.num_epochs)
+        .renderer(CustomRenderer {})
+        .with_application_logger(None)
         .summary()
         .build(
             config.model.init::<B>(&device),
