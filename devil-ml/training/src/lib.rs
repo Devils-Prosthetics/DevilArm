@@ -1,27 +1,26 @@
 use burn::train::renderer::TrainingProgress;
 use burn::train::renderer::MetricsRenderer;
 use burn::train::renderer::MetricState;
-use burn::data::dataset::vision::MnistDataset;
 use burn::module::Module;
 use burn::record::{BinFileRecorder, CompactRecorder, FullPrecisionSettings};
 use burn::train::metric::LossMetric;
 use burn::train::LearnerBuilder;
 use burn::train::metric::AccuracyMetric;
 use burn::data::dataloader::DataLoaderBuilder;
-use crate::data::MnistBatcher;
+use data::DevilBatcher;
+use data::DevilDataset;
 use burn::tensor::backend::AutodiffBackend;
 use burn::prelude::Config;
 use burn::optim::AdamConfig;
-use model::ModelConfig;
+use model::Model;
 
 pub mod data;
 pub mod training;
 
 #[derive(Config)]
 pub struct TrainingConfig {
-    pub model: ModelConfig,
     pub optimizer: AdamConfig,
-    #[config(default = 2)]
+    #[config(default = 10)]
     pub num_epochs: usize,
     #[config(default = 64)]
     pub batch_size: usize,
@@ -63,24 +62,30 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
 
     B::seed(config.seed);
 
-    let batcher_train = MnistBatcher::<B>::new(device.clone());
-    let batcher_valid = MnistBatcher::<B::InnerBackend>::new(device.clone());
+    let batcher_train = DevilBatcher::<B>::new(device.clone());
+    let batcher_valid = DevilBatcher::<B::InnerBackend>::new(device.clone());
+
+    let train_input = include_str!("../data/train.csv");
+    let test_input = include_str!("../data/test.csv");
+
+    let dataset_train = DevilDataset::new(train_input);
+    let dataset_test = DevilDataset::new(test_input);
 
     let dataloader_train = DataLoaderBuilder::new(batcher_train)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(MnistDataset::train());
+        .build(dataset_train);
 
     let dataloader_test = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(MnistDataset::test());
+        .build(dataset_test);
 
     let learner = LearnerBuilder::new(artifact_dir)
-        .metric_train_numeric(AccuracyMetric::new())
-        .metric_valid_numeric(AccuracyMetric::new())
+        // .metric_train_numeric(AccuracyMetric::new())
+        // .metric_valid_numeric(AccuracyMetric::new())
         .metric_train_numeric(LossMetric::new())
         .metric_valid_numeric(LossMetric::new())
         .with_file_checkpointer(CompactRecorder::new())
@@ -90,7 +95,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .with_application_logger(None)
         .summary()
         .build(
-            config.model.init::<B>(&device),
+            Model::new(&device),
             config.optimizer.init(),
             config.learning_rate,
         );
@@ -102,4 +107,6 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
     model_trained
         .save_file(format!("{artifact_dir}/model"), &recorder)
         .expect("Trained model should be saved successfully");
+
+    println!("artifact_dir: {artifact_dir}/model");
 }

@@ -9,7 +9,7 @@ default = ["std"]
 std = []
 
 [dependencies]
-burn = { workspace = true, default-features = false, features = ["ndarray"] }
+burn = { version = "0.14.0", default-features = false, features = ["ndarray"] }
 model = { path = "../model" }
 
 [build-dependencies]

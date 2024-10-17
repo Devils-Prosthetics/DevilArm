@@ -2,7 +2,7 @@ use burn::{
     backend::{Autodiff, Wgpu},
     optim::AdamConfig,
 };
-use model::ModelConfig;
+
 use training::{train, TrainingConfig};
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
     let artifact_dir = "/tmp/guide";
     train::<MyAutodiffBackend>(
         artifact_dir,
-        TrainingConfig::new(ModelConfig::new(10, 512), AdamConfig::new()),
+        TrainingConfig::new(AdamConfig::new()),
         device.clone(),
     );
 }

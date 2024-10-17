@@ -1,10 +1,13 @@
 #![no_std]
 #![no_main]
 
+use core::mem::transmute;
 use core::time::Duration;
 
 extern crate alloc;
 use crate::pio_pwm::PwmPio;
+use burn::backend::NdArray;
+use burn::tensor::Tensor;
 use embassy_executor::Spawner;
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::gpio;
@@ -17,6 +20,8 @@ use embassy_time::Timer;
 use gpio::{Level, Output};
 
 use embedded_alloc::Heap;
+
+use devil_ml;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -41,6 +46,9 @@ mod sensor;
 mod servo;
 mod usb;
 mod gesture;
+
+type Backend = NdArray<f32>;
+type BackendDeice = <Backend as burn::tensor::backend::Backend>::Device;
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -91,13 +99,18 @@ async fn main(spawner: Spawner) {
 
     info!("Getting started");
 
+    let device = BackendDeice::default();
+
     // let mut level = 0;
     loop {
         let amplitudes = rx_adv_value.receive().await;
-        info!("NewData");
-        for amplitude in amplitudes.iter() {
-            info!("{:?}", amplitude);
-        }
-        info!("EndData");
+
+        let input: [f32; 192] = unsafe { transmute(amplitudes) };
+
+        let tensor: burn::tensor::Tensor<Backend, 1> = Tensor::from_data(input, &device);
+
+        let inference = devil_ml::infer(device, tensor.unsqueeze());
+
+        // devil_ml::infer(device, item)
     }
 }
