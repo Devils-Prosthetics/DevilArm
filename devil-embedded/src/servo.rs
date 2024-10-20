@@ -1,9 +1,10 @@
 // This code has now been included in the raspberry pi pico embassy examples.
 use core::time::Duration;
-use easer::functions::Easing;
 use embassy_rp::pio::Instance;
 use embassy_time::Timer;
 use crate::pio_pwm::PwmPio;
+
+// This was merged by me into the embassy main branch in the examples.
 
 // The following will be interpreted as micro seconds.
 const DEFAULT_MIN_PULSE_WIDTH: u64 = 1000; // uncalibrated default, the shortest duty cycle sent to a servo
@@ -75,6 +76,7 @@ impl<'d, T: Instance, const SM: usize> ServoBuilder<'d, T, SM> {
     }
 }
 
+// The Servo struct, which is constructed from ServoBuilder
 pub struct Servo<'d, T: Instance, const SM: usize> {
     pwm: PwmPio<'d, T, SM>,
     min_pulse_width: Duration,
@@ -111,6 +113,7 @@ impl<'d, T: Instance, const SM: usize> Servo<'d, T, SM> {
         self.pwm.write(duration);
     }
 
+    // WIP
     fn degrees_to_time(&self, degree: u64) -> Duration {
         let degree_per_nano_second = (self.max_pulse_width.as_nanos() as u64 - self.min_pulse_width.as_nanos() as u64) / self.max_degree_rotation;
         let mut duration = Duration::from_nanos(degree * degree_per_nano_second + self.min_pulse_width.as_nanos() as u64);
@@ -121,6 +124,7 @@ impl<'d, T: Instance, const SM: usize> Servo<'d, T, SM> {
         duration
     }
 
+    // WIP
     fn time_to_degree(&self, time: Duration) -> u64 {
         let degree_per_nano_second = (self.max_pulse_width.as_nanos() as u64 - self.min_pulse_width.as_nanos() as u64) / self.max_degree_rotation;
         let degree = (time - self.min_pulse_width).as_nanos() / degree_per_nano_second as u128;

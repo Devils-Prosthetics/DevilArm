@@ -1,9 +1,10 @@
 // No Standard library is required to run this code, this is so that it can run on the micro controller.
 #![no_std]
 
-pub use model;
 use model::Model;
 
+pub use model;
+pub use burn::tensor::activation::softmax;
 use burn::prelude::*;
 
 // Add the model into the program at compile time, this should be found in the build directory in /model/model.bin
@@ -12,7 +13,7 @@ static MODEL_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/model/mode
 
 // Run the model with the given data, which is a rank 2 tensor, basically a 2d array.
 // Returns the result as a 2d array
-pub fn infer<B: burn::prelude::Backend>(device: B::Device, item: Tensor<B, 1>) -> burn::tensor::Tensor<B, 1> {
+pub fn infer<B: Backend>(device: B::Device, item: Tensor<B, 1>) -> burn::tensor::Tensor<B, 1> {
     let model: Model<B> = Model::from_embedded(&device, MODEL_BYTES);
 
     let predicted = model.forward(item);

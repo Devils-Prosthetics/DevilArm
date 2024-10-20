@@ -33,6 +33,8 @@ pub enum Output {
     PinkyThumb,
     Fist,
     IndexMiddle,
+
+    Unknown, // Added for logging abilities in devil-embedded, don't add to count
 }
 
 // Always update this if changing the number of Output items

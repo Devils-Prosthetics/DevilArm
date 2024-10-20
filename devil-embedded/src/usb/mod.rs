@@ -12,6 +12,7 @@ use self::serial::Handler;
 
 mod serial;
 
+// Removes all of the ascii whitespace from the byte array
 pub fn trim_ascii_whitespace(x: &[u8]) -> &[u8] {
     let from = match x.iter().position(|x| !x.is_ascii_whitespace()) {
         Some(i) => i,
@@ -21,16 +22,19 @@ pub fn trim_ascii_whitespace(x: &[u8]) -> &[u8] {
     &x[from..=to]
 }
 
+
+// Create a new command handler
 struct CommandHandler {}
 
 impl Handler for CommandHandler {
     async fn handle_data(&self, data: &[u8]) {
+        // Read two commands, "q" and "elf2uf2-term\r\n" which gets sent by "elf2uf2-rs" thanks to pull request by me
         let command = b"q";
-        let second_command = b"elf2uf2-term";
+        let second_command = b"elf2uf2-term\r\n";
         if trim_ascii_whitespace(data).eq_ignore_ascii_case(command) {
-            reset_to_usb_boot(0, 0);
+            reset_to_usb_boot(0, 0); // Restart the chip
         } else if trim_ascii_whitespace(data).eq_ignore_ascii_case(second_command) {
-            reset_to_usb_boot(0, 0);
+            reset_to_usb_boot(0, 0); // Restart the chip
         }
     }
 }

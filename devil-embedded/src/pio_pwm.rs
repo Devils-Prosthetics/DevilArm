@@ -9,6 +9,9 @@ use pio::{
     Common, Config, Instance, PioPin, StateMachine,
 };
 
+// This code has actually all been merged by me into the main line embassy project,
+// The release will come out in a while longer, and then we can remove this.
+
 // This converts the duration provided into the number of cycles the PIO needs to run to make it take the same time
 pub fn to_pio_cycles(duration: Duration) -> u32 {
     (clocks::clk_sys_freq() / 1_000_000) / 3 * duration.as_micros() as u32 // parentheses are required to prevent overflow

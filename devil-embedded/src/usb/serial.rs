@@ -7,6 +7,8 @@ use embassy_usb::driver::Driver;
 use embassy_usb::{Builder, Config};
 use log::{Metadata, Record};
 
+// Largely stolen from embassy_usb_logger with some modifications to add a custom command handler
+
 type CS = embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 
 pub trait Handler {
