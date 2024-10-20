@@ -1,13 +1,13 @@
 #![no_std]
 #![no_main]
 
-use core::mem::transmute;
 use core::time::Duration;
 
 extern crate alloc;
 use crate::pio_pwm::PwmPio;
 use burn::backend::NdArray;
 use burn::tensor::Tensor;
+use devil_ml::model::MODEL_INPUTS;
 use embassy_executor::Spawner;
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::gpio;
@@ -55,7 +55,7 @@ async fn main(spawner: Spawner) {
     // Initialize the allocator BEFORE you use it
     {
         use core::mem::MaybeUninit;
-        const HEAP_SIZE: usize = 1024;
+        const HEAP_SIZE: usize = 512;
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
     }
@@ -103,14 +103,12 @@ async fn main(spawner: Spawner) {
 
     // let mut level = 0;
     loop {
-        let amplitudes = rx_adv_value.receive().await;
-
-        let input: [f32; 192] = unsafe { transmute(amplitudes) };
+        let input: [f32; MODEL_INPUTS] = rx_adv_value.receive().await.map(|x| x as f32);
 
         let tensor: burn::tensor::Tensor<Backend, 1> = Tensor::from_data(input, &device);
 
-        let inference = devil_ml::infer(device, tensor.unsqueeze());
+        let inference = devil_ml::infer(device, tensor);
 
-        // devil_ml::infer(device, item)
+        info!("inference done!");
     }
 }

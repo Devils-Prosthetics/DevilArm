@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-burn = { workspace = true, features = ["train", "vision", "wgpu" ] }
+burn = { workspace = true, features = ["default", "train", "wgpu" ] }
 csv = "1.3.0"
 model = { path = "../model" }
 rand = "0.8.5"

@@ -9,11 +9,10 @@ default = ["std"]
 std = []
 
 [dependencies]
-burn = { version = "0.14.0", default-features = false, features = ["ndarray"] }
+burn = { workspace = true, features = ["ndarray"] }
 model = { path = "../model" }
 
 [build-dependencies]
-burn-import = { workspace = true }
 training = { path = "../training" }
-burn = { workspace = true, features = ["train", "vision"] }
+burn = { workspace = true, features = ["train"] }
 model = { path = "../model" }
