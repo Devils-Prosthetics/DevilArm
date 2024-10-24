@@ -30,7 +30,7 @@ impl Handler for CommandHandler {
     async fn handle_data(&self, data: &[u8]) {
         // Read two commands, "q" and "elf2uf2-term\r\n" which gets sent by "elf2uf2-rs" thanks to pull request by me
         let command = b"q";
-        let second_command = b"elf2uf2-term\n\r";
+        let second_command = b"elf2uf2-term";
         if trim_ascii_whitespace(data).eq_ignore_ascii_case(command) {
             reset_to_usb_boot(0, 0); // Restart the chip
         } else if trim_ascii_whitespace(data).eq_ignore_ascii_case(second_command) {
