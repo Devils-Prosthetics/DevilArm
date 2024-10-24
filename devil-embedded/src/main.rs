@@ -114,12 +114,15 @@ async fn main(spawner: Spawner) {
     let device = BackendDeice::default();
 
     loop {
+        defmt::info!("before inputs in loop");
         // Convert the u32 into f32, these really should be normalized between 0 and 1.
         let inputs: [f32; MODEL_INPUTS] = rx_adv_value.receive().await.map(|x| x as f32);
         let inputs_min = inputs.into_iter().reduce(f32::min).unwrap(); // get the min of inputs
         let inputs_max = inputs.into_iter().reduce(f32::max).unwrap(); // get the max of inputs
 
         let inputs = inputs.map(|x| (x - inputs_min) / (inputs_max - inputs_min)); // normalize the input
+
+        defmt::info!("after inputs nomalization");
 
         info!("NewData"); // Everything between NewData and EndData gets saved to a csv to be trained
         for input in inputs {
@@ -128,14 +131,22 @@ async fn main(spawner: Spawner) {
         }
         info!("EndData\n");
 
+        defmt::info!("Outputted inputs");
+
         // Create a tensor from the input
         let tensor: burn::tensor::Tensor<Backend, 1> = Tensor::from_data(inputs, &device);
+
+        defmt::info!("created tensor from data");
 
         // run inference on the tensor with the NdArray
         let inference = devil_ml::infer(device, tensor);
 
+        defmt::info!("ran inference on data");
+
         // normalize each output from the tensor to be between 0 and 1
         let inference = softmax(inference, 0);
+
+        defmt::info!("softmaxing");
 
         info!("inference done!");
         let result = inference

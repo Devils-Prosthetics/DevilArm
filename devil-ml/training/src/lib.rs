@@ -23,7 +23,7 @@ pub mod training;
 #[derive(Config)]
 pub struct TrainingConfig {
     pub optimizer: AdamConfig,
-    #[config(default = 200)]
+    #[config(default = 2)]
     pub num_epochs: usize,
     #[config(default = 7)] // On going bug here https://github.com/tracel-ai/burn/issues/1970 seems like this is the max size
     pub batch_size: usize,

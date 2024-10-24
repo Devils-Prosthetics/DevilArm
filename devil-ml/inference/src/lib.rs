@@ -53,23 +53,33 @@ mod tests {
         let tensor: burn::tensor::Tensor<Backend, 1> = Tensor::from_data(input, &device);
 
         // Run the inference with the 1d tensor, unsqueezed to become a 2d array.
-        let inference = infer(device, tensor.unsqueeze());
+        let inference = infer(device, tensor);
+
+        let inference = softmax(inference, 0);
 
         // Print out the inference, should add an assert, but this code is rather unstable, and will be changed later
         println!("inference: {:?}", inference);
 
-        inference.into_primitive()
-            .tensor()
-            .array
+        let result = inference
+            .into_data()
+            .as_slice::<f32>() // Convert the inference tensor into a slice of f32's
+            .unwrap()
             .into_iter()
-            .enumerate()
-            .for_each(|(index, probability)| {
-            let output = Output::try_from(index);
-            match output {
-                Ok(output) => println!("{:?}: {:?}", output, probability),
-                Err(_) => println!("Unkmown: {:?}", probability),
-            };
-        });
+            .enumerate() // Add index onto the probability
+            .map(|(index, probability)| {
+                println!("index: {index}");
+                let output = model::Output::try_from(index); // the index is which output it is corresponding with
+                let (output, probability) = match output {
+                    Ok(output) => (output, *probability), // Returns the output gesture and the probability
+                    Err(_) => (model::Output::Unknown, *probability), // This should theoretically never happen, but it's good to test
+                };
+                println!("{:?}: {:?}", output, probability); // Log the results
+                (output, probability) // return the results
+            })
+            .max_by(|x, y| x.1.partial_cmp(&y.1).unwrap()) // get the gesture with the highest probability 
+            .unwrap();
+
+        println!("result: {:?}", result);
         panic!();
     }
 }
