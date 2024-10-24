@@ -15,7 +15,7 @@ macro_rules! p {
 
 fn main() {
     // Get the path to the out directory, which is where we'll store the model.
-    let out = &PathBuf::from(env::var("OUT_DIR").unwrap());
+    let out = env::temp_dir();
 
     // Create a wgpu backend, this makes training significantly faster, and has great compatability between OS's.
     type MyBackend = Wgpu<f32, i32>;
@@ -25,10 +25,12 @@ fn main() {
     let device = burn::backend::wgpu::WgpuDevice::default();
 
     // The artifact directory is where the model gets outputted, which is where ever OUT_DIR is + "/model".
-    let artifact_dir = out.join("model");
+    let artifact_dir = out.join("devil-model");
 
     // Output the directory, so it is easier to debug in the future, should be removed eventually
     p!("artifact_dir: {:?}", artifact_dir.to_str().unwrap());
+
+    println!("cargo:rustc-env=OUT_DIR={}", artifact_dir.to_str().unwrap());
 
     // If the artifact directory exists, then we shouldn't recompile the model.
     // The artifact directory shouldn't exist if one of the build dependencies for inference changes.

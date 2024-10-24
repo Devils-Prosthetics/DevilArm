@@ -56,6 +56,7 @@ pub struct Model<B: Backend> {
     linear1: Linear<B>,
     linear2: Linear<B>,
     linear3: Linear<B>,
+    linear4: Linear<B>,
     dropout: Dropout,
     activation: Relu,
 }
@@ -80,7 +81,8 @@ impl<B: Backend> Model<B> {
         Self {
             linear1: LinearConfig::new(MODEL_INPUTS, 10).init(device),
             linear2: LinearConfig::new(10, 10).init(device),
-            linear3: LinearConfig::new(10, Output::COUNT).init(device),
+            linear3: LinearConfig::new(10, 10).init(device),
+            linear4: LinearConfig::new(10, Output::COUNT).init(device),
             activation: Relu::new(),
             dropout: DropoutConfig::new(0.2).init()
         }
@@ -98,11 +100,11 @@ impl<B: Backend> Model<B> {
         let x = self.dropout.forward(x); // Remove a random 50% of the nodes
         let x = self.activation.forward(x); // Run the relu function on the result
 
-        // let x = self.linear3.forward(x); // Run second linear transformation
-        // let x = self.dropout.forward(x); // Remove a random 50% of the nodes
-        // let x = self.activation.forward(x); // Run the relu function on the result
+        let x = self.linear3.forward(x); // Run second linear transformation
+        let x = self.dropout.forward(x); // Remove a random 50% of the nodes
+        let x = self.activation.forward(x); // Run the relu function on the result
 
-        self.linear3.forward(x) // Return the result of the final linear layer,
+        self.linear4.forward(x) // Return the result of the final linear layer,
         // Could also do a softmax here, but really there is no reason, whichever number is
         // the largest, that one is what the model predicts to be the best.
     }

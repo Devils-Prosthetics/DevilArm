@@ -9,7 +9,7 @@ use burn::prelude::*;
 
 // Add the model into the program at compile time, this should be found in the build directory in /model/model.bin
 // It is put there by the build.rs script.
-static MODEL_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/model/model.bin"));
+static MODEL_BYTES: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/model.bin"));
 
 // Run the model with the given data, which is a rank 2 tensor, basically a 2d array.
 // Returns the result as a 2d array
