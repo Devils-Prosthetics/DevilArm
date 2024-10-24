@@ -17,6 +17,7 @@ use embassy_rp::pio::{InterruptHandler as PioInterruptHandler, Pio};
 use embassy_rp::usb::{Driver, InterruptHandler as UsbInterruptHandler};
 use embassy_rp::{adc, bind_interrupts};
 use gpio::{Level, Output};
+use embassy_time::Timer;
 
 use sensor::{read_adc_value, CHANNEL_AMPLITUDES};
 use servo::ServoBuilder;
@@ -122,9 +123,10 @@ async fn main(spawner: Spawner) {
 
         info!("NewData"); // Everything between NewData and EndData gets saved to a csv to be trained
         for input in inputs {
+            Timer::after_nanos(10).await;
             info!("{}", input);
         }
-        info!("EndData");
+        info!("EndData\n");
 
         // Create a tensor from the input
         let tensor: burn::tensor::Tensor<Backend, 1> = Tensor::from_data(inputs, &device);
@@ -154,7 +156,7 @@ async fn main(spawner: Spawner) {
             .max_by(|x, y| x.1.partial_cmp(&y.1).unwrap()) // get the gesture with the highest probability 
             .unwrap();
 
-        info!("Predicted gesture: {:?}\n", result.0); // Log the gesture
+        info!("Predicted gesture: {:?}\n\n\n", result.0); // Log the gesture
 
         // Add in here the displaying of the gesture at a later date
     }

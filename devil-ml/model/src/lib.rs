@@ -30,9 +30,8 @@ pub type PrecisionSetting = HalfPrecisionSettings;
 #[derive(TryFromPrimitive, IntoPrimitive)] // This creates helpers to convert the enum to and from numbers 
 #[repr(usize)] // That conversion will be to and from usize
 pub enum Output {
-    PinkyThumb,
-    Fist,
-    IndexMiddle,
+    Flex,
+    Relax,
 
     Unknown, // Added for logging abilities in devil-embedded, don't add to count
 }
@@ -43,9 +42,8 @@ impl Output {
 
     pub fn from_str(string: &str) -> Option<Self> {
         match string {
-            "pinkythumb" => Some(Self::PinkyThumb),
-            "fist" => Some(Self::Fist),
-            "indexmiddle" => Some(Self::IndexMiddle),
+            "flex" => Some(Self::Flex),
+            "relax" => Some(Self::Relax),
             _ => None
         }
     }
@@ -58,6 +56,7 @@ pub struct Model<B: Backend> {
     linear1: Linear<B>,
     linear2: Linear<B>,
     linear3: Linear<B>,
+    linear4: Linear<B>,
     dropout: Dropout,
     activation: Relu,
 }
@@ -79,9 +78,10 @@ impl<B: Backend> Model<B> {
     // This is where the model really is defined, and as such, most optomizations to the model
     // should be placed here.
     pub fn new(device: &B::Device) -> Self {
-        let linear1 = LinearConfig::new(MODEL_INPUTS, 10).init(device);
-        let linear2 = LinearConfig::new(10, 10).init(device);
-        let linear3 = LinearConfig::new(10, Output::COUNT).init(device);
+        let linear1 = LinearConfig::new(MODEL_INPUTS, 386).init(device);
+        let linear2 = LinearConfig::new(386, 193).init(device);
+        let linear3 = LinearConfig::new(193, 10).init(device);
+        let linear4 = LinearConfig::new(10, Output::COUNT).init(device);
         let activation = Relu::new();
         let dropout = DropoutConfig::new(0.5).init(); // 50 percent chance of dropping the result in each node
 
@@ -90,6 +90,7 @@ impl<B: Backend> Model<B> {
             linear1,
             linear2,
             linear3,
+            linear4,
             dropout,
         }
     }
@@ -100,13 +101,17 @@ impl<B: Backend> Model<B> {
     // Takes in a 1d Tensor, then outputs a 1d Tensor
     pub fn forward(&self, input: Tensor<B, 1>) -> Tensor<B, 1> {
         let x = self.linear1.forward(input); // Run first linear transformation
-        let x = self.dropout.forward(x); // Remove a random 50% of the nodes
+        // let x = self.dropout.forward(x); // Remove a random 50% of the nodes
         let x = self.activation.forward(x); // Run the relu function on the result
         let x = self.linear2.forward(x); // Run second linear transformation
-        let x = self.dropout.forward(x); // Remove a random 50% of the nodes
+        // let x = self.dropout.forward(x); // Remove a random 50% of the nodes
         let x = self.activation.forward(x); // Run the relu function on the result
 
-        self.linear3.forward(x) // Return the result of the final linear layer,
+        let x = self.linear3.forward(x); // Run second linear transformation
+        // let x = self.dropout.forward(x); // Remove a random 50% of the nodes
+        let x = self.activation.forward(x); // Run the relu function on the result
+
+        self.linear4.forward(x) // Return the result of the final linear layer,
         // Could also do a softmax here, but really there is no reason, whichever number is
         // the largest, that one is what the model predicts to be the best.
     }
