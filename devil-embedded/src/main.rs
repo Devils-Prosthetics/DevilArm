@@ -4,7 +4,6 @@
 use core::time::Duration;
 
 extern crate alloc;
-use crate::pio_pwm::PwmPio;
 use burn::backend::NdArray;
 use burn::tensor::Tensor;
 use devil_ml::model::MODEL_INPUTS;
@@ -16,6 +15,7 @@ use embassy_rp::peripherals::{PIO0, USB};
 use embassy_rp::pio::{InterruptHandler as PioInterruptHandler, Pio};
 use embassy_rp::usb::{Driver, InterruptHandler as UsbInterruptHandler};
 use embassy_rp::{adc, bind_interrupts};
+use embassy_rp::pio_programs::pwm::{PioPwm, PioPwmProgram};
 use gpio::{Level, Output};
 use embassy_time::Timer;
 
@@ -31,7 +31,6 @@ use embedded_alloc::Heap;
 use devil_ml::{self, softmax};
 
 mod gesture;
-mod pio_pwm;
 mod sensor;
 mod servo;
 mod usb;
@@ -83,16 +82,29 @@ async fn main(spawner: Spawner) {
 
     // This defines a Servo, not really in use rn, but it will be more integrated in the final code,
     // Mostly detached for easy testing
-    let Pio {
-        mut common, sm0, ..
-    } = Pio::new(p.PIO0, Irqs);
-    let pwm = PwmPio::attach(&mut common, sm0, p.PIN_1);
-    let mut servo = ServoBuilder::new(pwm)
-        .set_max_degree_rotation(120)
-        .set_min_pulse_width(Duration::from_micros(350))
-        .set_max_pulse_width(Duration::from_micros(2600))
+    let Pio { mut common, sm0, sm1, sm2, .. } = Pio::new(p.PIO0, Irqs);
+    let prg = PioPwmProgram::new(&mut common);
+
+    let pwm_pio = PioPwm::new(&mut common, sm0, p.PIN_2, &prg);
+    let mut thumb_servo = ServoBuilder::new(pwm_pio)
+        .set_max_degree_rotation(120) // Example of adjusting values for MG996R servo
+        .set_min_pulse_width(Duration::from_micros(350)) // This value was detemined by a rough experiment.
+        .set_max_pulse_width(Duration::from_micros(2600)) // Along with this value.
         .build();
-    servo.start();
+
+    let pwm_pio = PioPwm::new(&mut common, sm1, p.PIN_3, &prg);
+    let mut four_fingers_servo = ServoBuilder::new(pwm_pio)
+        .set_max_degree_rotation(180)
+        .set_min_pulse_width(Duration::from_micros(500))
+        .set_max_pulse_width(Duration::from_micros(2500))
+        .build();
+
+    let pwm_pio = PioPwm::new(&mut common, sm2, p.PIN_4, &prg);
+    let mut arm_servo = ServoBuilder::new(pwm_pio)
+        .set_max_degree_rotation(180)
+        .set_min_pulse_width(Duration::from_micros(500))
+        .set_max_pulse_width(Duration::from_micros(2500))
+        .build();
 
     // spawn the task that reads the ADC value
     spawner
@@ -113,7 +125,19 @@ async fn main(spawner: Spawner) {
     // Initialize the NdArray backend
     let device = BackendDeice::default();
 
+    let mut degree = 0;
+
+    thumb_servo.start();
+    arm_servo.start();
+    four_fingers_servo.start();
+
     loop {
+        degree = (degree + 1) % 120;
+        
+        thumb_servo.rotate(180);
+        arm_servo.rotate(180);
+        four_fingers_servo.rotate(180);
+
         info!("before inputs in loop");
         // Convert the u32 into f32, these really should be normalized between 0 and 1.
         let inputs: [f32; MODEL_INPUTS] = rx_adv_value.receive().await.map(|x| x as f32);
