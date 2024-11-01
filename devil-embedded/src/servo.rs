@@ -1,8 +1,7 @@
+#![allow(unused)]
 use core::time::Duration;
 
-use embassy_rp::bind_interrupts;
-use embassy_rp::peripherals::PIO0;
-use embassy_rp::pio::{Instance, InterruptHandler};
+use embassy_rp::pio::Instance;
 use embassy_rp::pio_programs::pwm::PioPwm;
 
 const DEFAULT_MIN_PULSE_WIDTH: u64 = 1000; // uncalibrated default, the shortest duty cycle sent to a servo
@@ -81,10 +80,12 @@ impl<'d, T: Instance, const SM: usize> Servo<'d, T, SM> {
     }
 
     pub fn rotate(&mut self, degree: u64) {
-        let degree_per_nano_second = (self.max_pulse_width.as_nanos() as u64 - self.min_pulse_width.as_nanos() as u64)
+        let degree_per_nano_second = (self.max_pulse_width.as_nanos() as u64
+            - self.min_pulse_width.as_nanos() as u64)
             / self.max_degree_rotation;
-        let mut duration =
-            Duration::from_nanos(degree * degree_per_nano_second + self.min_pulse_width.as_nanos() as u64);
+        let mut duration = Duration::from_nanos(
+            degree * degree_per_nano_second + self.min_pulse_width.as_nanos() as u64,
+        );
         if self.max_pulse_width < duration {
             duration = self.max_pulse_width;
         }
