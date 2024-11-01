@@ -5,8 +5,8 @@ version = "0.1.0"
 license = "MIT"
 
 [dependencies]
-embassy-embedded-hal = { version = "0.2.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
-embassy-sync = { version = "0.6.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
+embassy-embedded-hal = { version = "0.2.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-sync = { version = "0.6.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-executor = { version = "0.6.0", features = [
     "task-arena-size-32768",
     "arch-cortex-m",
@@ -14,20 +14,21 @@ embassy-executor = { version = "0.6.0", features = [
     "executor-interrupt",
     "defmt",
     "integrated-timers",
-], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-time = { version = "0.3", features = [
     "defmt",
     "defmt-timestamp-uptime",
-], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-rp = { version = "0.2.0", features = [
     "defmt",
     "unstable-pac",
     "time-driver",
     "critical-section-impl",
     "rp2040"
-], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
-embassy-usb = { version = "0.3.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
-embassy-futures = { version = "0.1.1", git = "https://github.com/embassy-rs/embassy", rev = "8803128707b8bd9fc9dcea392a62dfd42aa822d2" }
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-usb = { version = "0.3.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-usb-logger = { version = "0.2.0", git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-futures = { version = "0.1.1", git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 
 defmt = "0.3"
 defmt-rtt = "0.4"

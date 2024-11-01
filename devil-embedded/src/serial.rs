@@ -1,3 +1,5 @@
+use core::str;
+
 use embassy_futures::join::join;
 use embassy_rp::peripherals::USB;
 use embassy_rp::rom_data::reset_to_usb_boot;
@@ -5,37 +7,30 @@ use embassy_rp::usb::Driver;
 use embassy_usb::class::cdc_acm::{CdcAcmClass, State};
 
 use embassy_usb::{Builder, Config};
-
-use crate::with_class;
-
-use self::serial::Handler;
-
-mod serial;
-
-// Removes all of the ascii whitespace from the byte array
-pub fn trim_ascii_whitespace(x: &[u8]) -> &[u8] {
-    let from = match x.iter().position(|x| !x.is_ascii_whitespace()) {
-        Some(i) => i,
-        None => return &x[0..0],
-    };
-    let to = x.iter().rposition(|x| !x.is_ascii_whitespace()).unwrap();
-    &x[from..=to]
-}
-
+use embassy_usb_logger::{with_class, ReceiverHandler};
 
 // Create a new command handler
-struct CommandHandler {}
+struct Handler;
 
-impl Handler for CommandHandler {
+impl ReceiverHandler for Handler {
     async fn handle_data(&self, data: &[u8]) {
-        // Read two commands, "q" and "elf2uf2-term\r\n" which gets sent by "elf2uf2-rs" thanks to pull request by me
-        let command = b"q";
-        let second_command = b"elf2uf2-term";
-        if trim_ascii_whitespace(data).eq_ignore_ascii_case(command) {
-            reset_to_usb_boot(0, 0); // Restart the chip
-        } else if trim_ascii_whitespace(data).eq_ignore_ascii_case(second_command) {
-            reset_to_usb_boot(0, 0); // Restart the chip
+        if let Ok(data) = str::from_utf8(data) {
+            let data = data.trim();
+
+            // If you are using elf2uf2-term with the '-t' flag, then when closing the serial monitor,
+            // this will automatically put the pico into boot mode.
+            if data == "q" || data == "elf2uf2-term" {
+                reset_to_usb_boot(0, 0); // Restart the chip
+            } else if data.eq_ignore_ascii_case("hello") {
+                log::info!("World!");
+            } else {
+                log::info!("Recieved: {:?}", data);
+            }
         }
+    }
+
+    fn new() -> Self {
+        Self
     }
 }
 
@@ -78,6 +73,9 @@ pub async fn usb_task(driver: Driver<'static, USB>) {
 
     let mut device = builder.build();
 
-    join(device.run(), with_class!(1024, log::LevelFilter::Info, class, CommandHandler)).await;
+    join(
+        device.run(),
+        with_class!(1024, log::LevelFilter::Info, class, Handler),
+    )
+    .await;
 }
-

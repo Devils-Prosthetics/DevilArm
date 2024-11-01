@@ -2,7 +2,6 @@ use burn::optim::AdamConfig;
 use training::TrainingConfig;
 use training::train;
 use burn::backend::{Autodiff, Wgpu};
-use std::path::PathBuf;
 use std::env;
 
 // Macro which allows the user to print out to console despite being in a build.rs file
@@ -35,6 +34,7 @@ fn main() {
     // If the artifact directory exists, then we shouldn't recompile the model.
     // The artifact directory shouldn't exist if one of the build dependencies for inference changes.
     if artifact_dir.exists() { return; }
+    
 
     // Train the model, with a default training config, and the specified wgpu backend.
     train::<MyAutodiffBackend>(

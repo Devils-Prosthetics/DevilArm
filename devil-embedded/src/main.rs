@@ -13,17 +13,17 @@ use embassy_rp::gpio;
 use embassy_rp::gpio::Pull;
 use embassy_rp::peripherals::{PIO0, USB};
 use embassy_rp::pio::{InterruptHandler as PioInterruptHandler, Pio};
+use embassy_rp::pio_programs::pwm::{PioPwm, PioPwmProgram};
 use embassy_rp::usb::{Driver, InterruptHandler as UsbInterruptHandler};
 use embassy_rp::{adc, bind_interrupts};
-use embassy_rp::pio_programs::pwm::{PioPwm, PioPwmProgram};
-use gpio::{Level, Output};
 use embassy_time::Timer;
+use gpio::{Level, Output};
 
 use sensor::{read_adc_value, CHANNEL_AMPLITUDES};
+use serial::usb_task;
 use servo::ServoBuilder;
 
 use log::*;
-use usb::usb_task;
 use {defmt_rtt as _, panic_probe as _};
 
 use embedded_alloc::Heap;
@@ -32,8 +32,8 @@ use devil_ml::{self, softmax};
 
 mod gesture;
 mod sensor;
+mod serial;
 mod servo;
-mod usb;
 
 // Sets up an allocator to be used, without this, you cannot put things on the heap, no vectors!
 #[global_allocator]
@@ -57,7 +57,7 @@ async fn main(spawner: Spawner) {
     {
         use core::mem::MaybeUninit;
         const HEAP_SIZE: usize = 100 * 1024; // Watch out for this, if it is too big or small, program may crash
-        // this is in u8 bytes, as such this is a total of 100kb
+                                             // this is in u8 bytes, as such this is a total of 100kb
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) } // Initialize the heap
     }
@@ -82,7 +82,13 @@ async fn main(spawner: Spawner) {
 
     // This defines a Servo, not really in use rn, but it will be more integrated in the final code,
     // Mostly detached for easy testing
-    let Pio { mut common, sm0, sm1, sm2, .. } = Pio::new(p.PIO0, Irqs);
+    let Pio {
+        mut common,
+        sm0,
+        sm1,
+        sm2,
+        ..
+    } = Pio::new(p.PIO0, Irqs);
     let prg = PioPwmProgram::new(&mut common);
 
     let pwm_pio = PioPwm::new(&mut common, sm0, p.PIN_2, &prg);
@@ -133,7 +139,7 @@ async fn main(spawner: Spawner) {
 
     loop {
         degree = (degree + 1) % 120;
-        
+
         thumb_servo.rotate(180);
         arm_servo.rotate(180);
         four_fingers_servo.rotate(180);
@@ -188,7 +194,7 @@ async fn main(spawner: Spawner) {
                 info!("{:?}: {:?}", output, probability); // Log the results
                 (output, probability) // return the results
             })
-            .max_by(|x, y| x.1.partial_cmp(&y.1).unwrap()) // get the gesture with the highest probability 
+            .max_by(|x, y| x.1.partial_cmp(&y.1).unwrap()) // get the gesture with the highest probability
             .unwrap();
 
         info!("Predicted gesture: {:?}\n\n\n", result.0); // Log the gesture
