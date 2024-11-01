@@ -1,8 +1,8 @@
-use burn::optim::AdamConfig;
-use training::TrainingConfig;
-use training::train;
 use burn::backend::{Autodiff, Wgpu};
+use burn::optim::AdamConfig;
 use std::env;
+use training::train;
+use training::TrainingConfig;
 
 // Macro which allows the user to print out to console despite being in a build.rs file
 // Comes from https://github.com/rust-lang/cargo/issues/985#issuecomment-1071667472
@@ -33,12 +33,15 @@ fn main() {
 
     // If the artifact directory exists, then we shouldn't recompile the model.
     // The artifact directory shouldn't exist if one of the build dependencies for inference changes.
-    if artifact_dir.exists() { return; }
-    
+    if artifact_dir.exists() {
+        return;
+    }
 
     // Train the model, with a default training config, and the specified wgpu backend.
     train::<MyAutodiffBackend>(
-        artifact_dir.to_str().expect("Failed to convert artifact_dir to string"),
+        artifact_dir
+            .to_str()
+            .expect("Failed to convert artifact_dir to string"),
         TrainingConfig::new(AdamConfig::new()),
         device.clone(),
     );

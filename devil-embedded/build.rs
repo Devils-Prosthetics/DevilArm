@@ -12,8 +12,11 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
+use which::which;
 
 fn main() {
+    which("elf2uf2-rs").expect("elf2uf2-rs is not installed, please first install it with `cargo install elf2uf2-rs --locked`");
+    which("probe-rs").expect("probe-rs is not installed, please first install it with `cargo install probe-rs --features=cli --locked`");
     // Put `memory.x` in our output directory and ensure it's
     // on the linker search path.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());

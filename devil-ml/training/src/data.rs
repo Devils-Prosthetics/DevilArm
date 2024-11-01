@@ -1,5 +1,8 @@
 use burn::{
-    data::{dataloader::batcher::Batcher, dataset::{Dataset, InMemDataset}},
+    data::{
+        dataloader::batcher::Batcher,
+        dataset::{Dataset, InMemDataset},
+    },
     prelude::*,
 };
 
@@ -35,7 +38,7 @@ pub struct DevilBatch<B: Backend> {
 
 // Defines the dataset, which just stores in memory the DevilItem struct
 pub struct DevilDataset {
-    dataset: InMemDataset<DevilItem>
+    dataset: InMemDataset<DevilItem>,
 }
 
 // Just stores a [f32; MODEL_INPUTS] vector of sensor inputs, and a label as a number, will change to
@@ -90,12 +93,13 @@ impl DevilDataset {
                     // returned from split_last, just inform that the row has an issue, then skip it.
                     let Some((label, inputs)) = values.split_last() else {
                         eprintln!("row is improperly formatted");
-                        continue
+                        continue;
                     };
 
                     // Parse all of the inputs into f32's
-                    let inputs: Vec<f32> = inputs.into_iter()
-                        .map(|s| s.parse::<f32>().expect("Found non number in csv"))  // Filter out invalid f32
+                    let inputs: Vec<f32> = inputs
+                        .into_iter()
+                        .map(|s| s.parse::<f32>().expect("Found non number in csv")) // Filter out invalid f32
                         .collect();
 
                     // parsing label to Output
@@ -105,9 +109,9 @@ impl DevilDataset {
                     // Push the item to the vector
                     output.push(DevilItem {
                         inputs, // First 196 items as f32
-                        label // Output
+                        label,  // Output
                     });
-                },
+                }
                 Err(_) => continue,
             };
         }

@@ -1,8 +1,8 @@
-use std::env;
 use burn::{
     backend::{Autodiff, Wgpu},
     optim::AdamConfig,
 };
+use std::env;
 
 use training::{train, TrainingConfig};
 

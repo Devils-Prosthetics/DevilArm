@@ -3,16 +3,15 @@
 
 // The purpose of this file is to be shared between inference and training.
 
+use burn::record::BinBytesRecorder;
 use burn::record::HalfPrecisionSettings;
 use burn::record::Recorder;
-use burn::record::BinBytesRecorder;
 use burn::{
-    nn::{
-        Dropout, DropoutConfig, Linear, LinearConfig, Relu,
-    }, prelude::*
+    nn::{Dropout, DropoutConfig, Linear, LinearConfig, Relu},
+    prelude::*,
 };
 
-use num_enum::{TryFromPrimitive, IntoPrimitive};
+use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 // Basic model structure at the time of writing is like this
 // Inputs:Outputs
@@ -26,8 +25,7 @@ pub const MODEL_INPUTS: usize = 192;
 pub type PrecisionSetting = HalfPrecisionSettings;
 
 /// The possible outputs of the model. Update this if more is wanted.
-#[derive(Clone, Debug, PartialEq)]
-#[derive(TryFromPrimitive, IntoPrimitive)] // This creates helpers to convert the enum to and from numbers 
+#[derive(Clone, Debug, PartialEq, TryFromPrimitive, IntoPrimitive)] // This creates helpers to convert the enum to and from numbers
 #[repr(usize)] // That conversion will be to and from usize
 pub enum Output {
     Flex,
@@ -44,7 +42,7 @@ impl Output {
         match string {
             "flex" => Some(Self::Flex),
             "relax" => Some(Self::Relax),
-            _ => None
+            _ => None,
         }
     }
 }
@@ -84,7 +82,7 @@ impl<B: Backend> Model<B> {
             linear3: LinearConfig::new(10, 10).init(device),
             linear4: LinearConfig::new(10, Output::COUNT).init(device),
             activation: Relu::new(),
-            dropout: DropoutConfig::new(0.2).init()
+            dropout: DropoutConfig::new(0.2).init(),
         }
     }
 
@@ -105,7 +103,7 @@ impl<B: Backend> Model<B> {
         let x = self.activation.forward(x); // Run the relu function on the result
 
         self.linear4.forward(x) // Return the result of the final linear layer,
-        // Could also do a softmax here, but really there is no reason, whichever number is
-        // the largest, that one is what the model predicts to be the best.
+                                // Could also do a softmax here, but really there is no reason, whichever number is
+                                // the largest, that one is what the model predicts to be the best.
     }
 }

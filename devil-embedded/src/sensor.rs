@@ -28,15 +28,33 @@ pub async fn read_adc_value(
     tx_value: Sender<'static, ThreadModeRawMutex, Amplitudes, 64>,
 ) {
     // Filters for the signal from power line noise with Savannah's EMGFilters
-    let mut filter_1 = emg_filter_rs::EMGFilters::new(emg_filter_rs::SampleFrequency::Hz1000, emg_filter_rs::NotchFrequency::Hz60, true, true, true);
-    let mut filter_2 = emg_filter_rs::EMGFilters::new(emg_filter_rs::SampleFrequency::Hz1000, emg_filter_rs::NotchFrequency::Hz60, true, true, true);
-    let mut filter_3 = emg_filter_rs::EMGFilters::new(emg_filter_rs::SampleFrequency::Hz1000, emg_filter_rs::NotchFrequency::Hz60, true, true, true);
+    let mut filter_1 = emg_filter_rs::EMGFilters::new(
+        emg_filter_rs::SampleFrequency::Hz1000,
+        emg_filter_rs::NotchFrequency::Hz60,
+        true,
+        true,
+        true,
+    );
+    let mut filter_2 = emg_filter_rs::EMGFilters::new(
+        emg_filter_rs::SampleFrequency::Hz1000,
+        emg_filter_rs::NotchFrequency::Hz60,
+        true,
+        true,
+        true,
+    );
+    let mut filter_3 = emg_filter_rs::EMGFilters::new(
+        emg_filter_rs::SampleFrequency::Hz1000,
+        emg_filter_rs::NotchFrequency::Hz60,
+        true,
+        true,
+        true,
+    );
 
     // Define the measurements arrays that will later be combined
     let mut measurements_1 = [0f32; NUM_OF_MEASUREMENTS];
     let mut measurements_2 = [0f32; NUM_OF_MEASUREMENTS];
     let mut measurements_3 = [0f32; NUM_OF_MEASUREMENTS];
-    
+
     // The amplitudes array which will be sent, initialize as zeros
     let mut amplitudes: Amplitudes = [0u32; NUM_OF_MEASUREMENTS * 3];
     let mut pos = 0;

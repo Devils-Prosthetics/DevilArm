@@ -1,15 +1,14 @@
-use burn::train::ClassificationOutput;
-use burn::train::ValidStep;
-use burn::train::TrainOutput;
-use burn::tensor::backend::AutodiffBackend;
-use burn::train::TrainStep;
 use burn::prelude::*;
+use burn::tensor::backend::AutodiffBackend;
+use burn::train::ClassificationOutput;
+use burn::train::TrainOutput;
+use burn::train::TrainStep;
+use burn::train::ValidStep;
 
 use model::Model;
 use nn::loss::CrossEntropyLossConfig;
 
 use crate::data::DevilBatch;
-
 
 // Allows for us to implement forward_step on the Model, despite Model not being defined within this crate.
 pub trait ModelForwardStep<B: Backend> {
@@ -21,7 +20,7 @@ impl<B: Backend> ModelForwardStep<B> for Model<B> {
     // This function will runn for each train step and validation step
     fn forward_step(&self, item: DevilBatch<B>) -> ClassificationOutput<B> {
         // The point of the conversion from inputs to outputs with chunks is the following
-        // item.inputs will be an tensor like this [[f32; MODEL_INPUTS]; 10], we need to convert this into 
+        // item.inputs will be an tensor like this [[f32; MODEL_INPUTS]; 10], we need to convert this into
         // Vector of tensors like [f32; MODEL_INPUTS] so that we can call self.forward on all of them
         // From there we need to convert them back into [[f32; MODEL_INPUTS]; 1] (unsqueeze does this)
         // and then into [[f32; MODEL_INPUTS]; 10] with cat
@@ -31,10 +30,16 @@ impl<B: Backend> ModelForwardStep<B> for Model<B> {
         let chunks = item.inputs.chunk(num_chunks, 0); // chunks them into that number of elements
 
         // Shrinks the tensors into a 1d tensor
-        let inputs: Vec<_> = chunks.into_iter().map(|item| item.squeeze::<1>(0)).collect();
+        let inputs: Vec<_> = chunks
+            .into_iter()
+            .map(|item| item.squeeze::<1>(0))
+            .collect();
 
         // Runs the tensors through self.forward, then converts them into 2d tensors
-        let outputs: Vec<_> = inputs.into_iter().map(|input| self.forward(input).unsqueeze()).collect();
+        let outputs: Vec<_> = inputs
+            .into_iter()
+            .map(|input| self.forward(input).unsqueeze())
+            .collect();
 
         // Adds all the tensors back together, so that it is the same as what came in, except passed through forward
         let outputs: Tensor<B, 2> = Tensor::cat(outputs, 0);

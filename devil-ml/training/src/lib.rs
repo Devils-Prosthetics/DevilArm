@@ -1,31 +1,32 @@
-use burn::train::metric::AccuracyMetric;
-use burn::train::renderer::TrainingProgress;
-use burn::train::renderer::MetricsRenderer;
-use burn::train::renderer::MetricState;
-use burn::module::Module;
-use burn::record::{BinFileRecorder, CompactRecorder};
-use burn::train::metric::LossMetric;
-use burn::train::LearnerBuilder;
 use burn::data::dataloader::DataLoaderBuilder;
+use burn::module::Module;
+use burn::optim::AdamConfig;
+use burn::prelude::Config;
+use burn::record::{BinFileRecorder, CompactRecorder};
+use burn::tensor::backend::AutodiffBackend;
+use burn::train::metric::AccuracyMetric;
+use burn::train::metric::LossMetric;
+use burn::train::renderer::MetricState;
+use burn::train::renderer::MetricsRenderer;
+use burn::train::renderer::TrainingProgress;
+use burn::train::LearnerBuilder;
 use data::DevilBatcher;
 use data::DevilDataset;
-use burn::tensor::backend::AutodiffBackend;
-use burn::prelude::Config;
-use burn::optim::AdamConfig;
 use model::Model;
 use model::PrecisionSetting;
 
 pub mod data;
 pub mod training;
 
-// Uses a macro to add lots of functionality to this config, as seen in 
+// Uses a macro to add lots of functionality to this config, as seen in
 // https://burn.dev/burn-book/building-blocks/config.html
 #[derive(Config)]
 pub struct TrainingConfig {
     pub optimizer: AdamConfig,
     #[config(default = 2)]
     pub num_epochs: usize,
-    #[config(default = 7)] // On going bug here https://github.com/tracel-ai/burn/issues/1970 seems like this is the max size
+    #[config(default = 7)]
+    // On going bug here https://github.com/tracel-ai/burn/issues/1970 seems like this is the max size
     pub batch_size: usize,
     #[config(default = 4)]
     pub num_workers: usize,
@@ -100,7 +101,7 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .num_workers(config.num_workers)
         .build(dataset_test);
 
-    // Creates a learner, which is then used to 
+    // Creates a learner, which is then used to
     let learner = LearnerBuilder::new(artifact_dir)
         // Not implementing these yet, might in the future if needed
         .metric_train_numeric(AccuracyMetric::new())
@@ -114,8 +115,12 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .summary(); // Print out the final results of the model training
 
     // If custom renderer is defined, then use the custom renderer
-    let learner = if config.custom_renderer { learner.renderer(CustomRenderer {}) } else { learner };
-        
+    let learner = if config.custom_renderer {
+        learner.renderer(CustomRenderer {})
+    } else {
+        learner
+    };
+
     let learner = learner.build(
         Model::new(&device),
         config.optimizer.init(),

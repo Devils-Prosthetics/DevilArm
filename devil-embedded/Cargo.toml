@@ -5,8 +5,12 @@ version = "0.1.0"
 license = "MIT"
 
 [dependencies]
-embassy-embedded-hal = { version = "0.2.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
-embassy-sync = { version = "0.6.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-embedded-hal = { version = "0.2.0", features = [
+    "defmt",
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-sync = { version = "0.6.0", features = [
+    "defmt",
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-executor = { version = "0.6.0", features = [
     "task-arena-size-32768",
     "arch-cortex-m",
@@ -24,9 +28,11 @@ embassy-rp = { version = "0.2.0", features = [
     "unstable-pac",
     "time-driver",
     "critical-section-impl",
-    "rp2040"
+    "rp2040",
 ], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
-embassy-usb = { version = "0.3.0", features = ["defmt"], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
+embassy-usb = { version = "0.3.0", features = [
+    "defmt",
+], git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-usb-logger = { version = "0.2.0", git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 embassy-futures = { version = "0.1.1", git = "https://github.com/embassy-rs/embassy", rev = "763de8a37e4ca4e92ca6ea904c72b45fe6eb84eb" }
 
@@ -47,13 +53,18 @@ portable-atomic = { version = "1.7.0", features = ["critical-section"] }
 log = "0.4"
 pio-proc = "0.2"
 pio = "0.2.1"
-embedded-alloc = "0.5.1"
+embedded-alloc = "0.6.0"
 microfft = "0.6.0"
 emg-filter-rs = { git = "https://github.com/Devils-Prosthetics/emg-filter-rs" }
 easer = { version = "0.3.0", default-features = false }
-num-traits = { version = "0.2.15", default-features = false, features = ["libm"] }
+num-traits = { version = "0.2.15", default-features = false, features = [
+    "libm",
+] }
 devil-ml = { path = "../devil-ml/inference", default-features = false }
-burn = { version = "0.14.0", default-features = false, features = ["ndarray"] }
+burn = { version = "0.15.0", default-features = false, features = ["ndarray"] }
+
+[build-dependencies]
+which = "7.0.0"
 
 [profile.release]
 lto = true
@@ -62,4 +73,3 @@ incremental = false
 codegen-units = 1
 # note: debug = true is okay - debuginfo isn't flashed to the device!
 debug = true
-

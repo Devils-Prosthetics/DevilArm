@@ -26,9 +26,9 @@ use servo::ServoBuilder;
 use log::*;
 use {defmt_rtt as _, panic_probe as _};
 
-use embedded_alloc::Heap;
-
 use devil_ml::{self, softmax};
+
+use embedded_alloc::LlffHeap as Heap;
 
 mod gesture;
 mod sensor;
@@ -91,25 +91,29 @@ async fn main(spawner: Spawner) {
     } = Pio::new(p.PIO0, Irqs);
     let prg = PioPwmProgram::new(&mut common);
 
+    let servo_degree_rotation = 180;
+    let servo_max_pulse_width = Duration::from_micros(500);
+    let servo_min_pulse_width = Duration::from_micros(2500);
+
     let pwm_pio = PioPwm::new(&mut common, sm0, p.PIN_2, &prg);
     let mut thumb_servo = ServoBuilder::new(pwm_pio)
-        .set_max_degree_rotation(120) // Example of adjusting values for MG996R servo
-        .set_min_pulse_width(Duration::from_micros(350)) // This value was detemined by a rough experiment.
-        .set_max_pulse_width(Duration::from_micros(2600)) // Along with this value.
+        .set_max_degree_rotation(servo_degree_rotation) // Example of adjusting values for MG996R servo
+        .set_min_pulse_width(servo_max_pulse_width) // This value was detemined by a rough experiment.
+        .set_max_pulse_width(servo_min_pulse_width) // Along with this value.
         .build();
 
     let pwm_pio = PioPwm::new(&mut common, sm1, p.PIN_3, &prg);
     let mut four_fingers_servo = ServoBuilder::new(pwm_pio)
-        .set_max_degree_rotation(180)
-        .set_min_pulse_width(Duration::from_micros(500))
-        .set_max_pulse_width(Duration::from_micros(2500))
+        .set_max_degree_rotation(servo_degree_rotation)
+        .set_min_pulse_width(servo_max_pulse_width)
+        .set_max_pulse_width(servo_min_pulse_width)
         .build();
 
     let pwm_pio = PioPwm::new(&mut common, sm2, p.PIN_4, &prg);
     let mut arm_servo = ServoBuilder::new(pwm_pio)
-        .set_max_degree_rotation(180)
-        .set_min_pulse_width(Duration::from_micros(500))
-        .set_max_pulse_width(Duration::from_micros(2500))
+        .set_max_degree_rotation(servo_degree_rotation)
+        .set_min_pulse_width(servo_max_pulse_width)
+        .set_max_pulse_width(servo_min_pulse_width)
         .build();
 
     // spawn the task that reads the ADC value
