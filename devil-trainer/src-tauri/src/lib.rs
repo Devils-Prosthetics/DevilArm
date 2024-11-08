@@ -1,6 +1,6 @@
-use tauri::{AppHandle, Emitter};
 use once_cell::sync::OnceCell;
 use std::process::Command;
+use tauri::{AppHandle, Emitter};
 mod serial;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -9,7 +9,7 @@ mod serial;
 #[tauri::command]
 fn serial_start(port: String) -> bool {
     let port_clone = port.clone();
-    
+
     std::thread::spawn(move || {
         if let wow = serial::start(&port_clone) {
             eprintln!("Error starting serial port: {:?}", wow);
@@ -63,15 +63,21 @@ pub static GLOBAL_APP_HANDLE: OnceCell<AppHandle> = OnceCell::new();
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .setup(move |app| {
             // Set the global app handler once in setup.
-            GLOBAL_APP_HANDLE.set(app.handle().clone())
+            GLOBAL_APP_HANDLE
+                .set(app.handle().clone())
                 .expect("Failed to set global app handle");
-            
+
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![serial_start, serial_stop, upload_file_to_pi])
+        .invoke_handler(tauri::generate_handler![
+            serial_start,
+            serial_stop,
+            upload_file_to_pi
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -7,7 +7,7 @@ use tauri::{http::response, Emitter};
 use crate::GLOBAL_APP_HANDLE;
 
 struct Serial {
-    port: Box<dyn SerialPort>
+    port: Box<dyn SerialPort>,
 }
 
 impl Serial {
@@ -16,9 +16,7 @@ impl Serial {
             .timeout(Duration::from_millis(10))
             .open()?;
 
-        Ok(Self {
-            port
-        })
+        Ok(Self { port })
     }
 }
 
@@ -28,15 +26,14 @@ pub fn start(port: &str) -> bool {
     let port = serialport::new("/dev/ttyACM0", 115_200)
         .timeout(Duration::from_millis(10))
         .open();
-        
+
     let mut port = match port {
         Ok(port) => port,
         Err(err) => {
             println!("err: {:?}", err);
             return false;
-        },
+        }
     };
-
 
     loop {
         let mut serial_buf: Vec<u8> = vec![0; 32];
@@ -48,7 +45,7 @@ pub fn start(port: &str) -> bool {
                     let response = GLOBAL_APP_HANDLE.get().unwrap().emit("serial-data", data);
                     println!("{:?}", response);
                 }
-            },
+            }
             Err(err) => {
                 println!("Error reading from port: {:?}", err);
             }

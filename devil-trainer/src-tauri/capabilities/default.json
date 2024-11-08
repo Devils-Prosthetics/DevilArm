@@ -8,6 +8,8 @@
   "permissions": [
     "core:default",
     "shell:allow-open",
-    "websocket:default"
+    "websocket:default",
+    "fs:default",
+    "fs:default"
   ]
 }
