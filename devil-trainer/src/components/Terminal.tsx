@@ -1,68 +1,49 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./Button";
 import { useConsoleStore } from "../stores/console";
 import { BaseDirectory, create } from "@tauri-apps/plugin-fs";
-
+import { SerialPort } from "tauri-plugin-serialplugin";
+import * as os from "@tauri-apps/plugin-os";
 
 export const Terminal = ({ className, ...props }: { className: string }) => {
 	const consoleState = useConsoleStore((state) => state);
 
+	const [serialPort, setSerialPort] = useState<SerialPort | undefined>();
+
 	// Handle Start and Restart buttons
 	// Handle Start button
-	const handleStart = async () => {
-		consoleState.set(['Starting serial port connection...']);
-		try {
-			const response = await invoke('serial_start', { port: '/dev/ttyACM0' }) as string;
-			consoleState.set([response]);
+	const connect = async () => {
+		await SerialPort.closeAll();
+		const ports = await SerialPort.available_ports();
 
-		} catch (error) {
-			consoleState.set([`Error: ${error}`]);
+		for (const [name, info] of Object.entries(ports)) {
+			if (info.manufacturer != 'Devils Prosthetics') continue;
+
+			if (os.platform() == "macos" && name.includes('tty')) continue;
+
+			console.log(`connecting to ${name}`)
+
+			const serialPort = new SerialPort({
+				path: name,
+				baudRate: 115200
+			});
+
+			await serialPort.open();
+
+			setSerialPort(serialPort);
+
+			break;
 		}
-	};
-
+	}
 	// Handle Restart button (no backend call, just resets the console)
 	const handleRestart = () => consoleState.set(['Restart clicked']);
 
 	useEffect(() => {
-		let logToCSV = false;
-		let holdData = "";
-		let fileNum = 0;
-		// Add in any serial-data events that are called from rust to the console
-		const unlisten = listen('serial-data', async (event) => {
-			const payload = event.payload as string;
-			if (payload.includes("NewData") === true) {
-				logToCSV = true;
-				consoleState.add(payload);
-				return;
-			}
-			if (payload.includes("EndData") === true) {
-				logToCSV = false;
-				return;
-			}
-			if (logToCSV === true) {
-				holdData = holdData + payload;
-			} else {
-				if (holdData != "") {
-					// Export to CSV
-					const file = await create('GitHub/DevilArm/devil-ml/training/data/temp' + fileNum + '.csv', { baseDir: BaseDirectory.Document });
-					await file.write(new TextEncoder().encode(holdData));
-					await file.close();
-					fileNum++;
-				}
-				holdData = "";
-				consoleState.add(payload);
-			}
-		});
-
-
-
-		return () => {
-			// remove the listener on  unmount
-			unlisten.then((fn) => fn());
-		};
-	}, []);
+		if (!serialPort) {
+			connect();
+		}
+	}, [serialPort]);
 
 	return (
 		<div className={`relative h-full ${className}`} {...props}>
