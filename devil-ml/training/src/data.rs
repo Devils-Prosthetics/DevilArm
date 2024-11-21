@@ -7,7 +7,7 @@ use burn::{
 };
 
 use csv;
-use model::Output;
+use devil_ml_model::Output;
 
 // This file just creates the batching logic, just a bunch of boiler plate, based upon
 // https://burn.dev/burn-book/basic-workflow/data.html

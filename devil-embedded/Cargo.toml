@@ -60,10 +60,11 @@ easer = { version = "0.3.0", default-features = false }
 num-traits = { version = "0.2.15", default-features = false, features = [
     "libm",
 ] }
-devil-ml = { path = "../devil-ml/inference", default-features = false }
+devil-ml-model = { path = "../devil-ml/model" }
 burn = { version = "0.15.0", default-features = false, features = ["ndarray"] }
 
 [build-dependencies]
+devil-ml-model = { path = "../devil-ml/model" }
 which = "7.0.0"
 
 [profile.release]

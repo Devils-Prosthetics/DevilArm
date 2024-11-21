@@ -29,20 +29,33 @@ pub type PrecisionSetting = HalfPrecisionSettings;
 #[repr(usize)] // That conversion will be to and from usize
 pub enum Output {
     Flex,
-    Relax,
+    Fist,
+    PinkyToThumb,
 
     Unknown, // Added for logging abilities in devil-embedded, don't add to count
 }
 
 // Always update this if changing the number of Output items
 impl Output {
-    pub const COUNT: usize = 2;
+    pub const COUNT: usize = 3;
 
     pub fn from_str(string: &str) -> Option<Self> {
         match string {
             "flex" => Some(Self::Flex),
-            "relax" => Some(Self::Relax),
+            "fist" => Some(Self::Fist),
+            "pinky-to-thumb" => Some(Self::PinkyToThumb),
+
             _ => None,
+        }
+    }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            Self::Flex => "flex",
+            Self::Fist => "fist",
+            Self::PinkyToThumb => "pinky-to-thumb",
+
+            Self::Unknown => "unknown",
         }
     }
 }
@@ -107,3 +120,13 @@ impl<B: Backend> Model<B> {
                                 // the largest, that one is what the model predicts to be the best.
     }
 }
+
+// Run the model with the given data, which is a rank 2 tensor, basically a 2d array.
+// Returns the result as a 2d array
+pub fn infer<B: Backend>(item: Tensor<B, 1>, model: &Model<B>) -> burn::tensor::Tensor<B, 1> {
+    let predicted = model.forward(item);
+
+    return predicted;
+}
+
+pub static ARTIFACT_DIR: &str = env!("ARTIFACT_DIR");

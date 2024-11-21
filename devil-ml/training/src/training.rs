@@ -5,7 +5,7 @@ use burn::train::TrainOutput;
 use burn::train::TrainStep;
 use burn::train::ValidStep;
 
-use model::Model;
+use devil_ml_model::Model;
 use nn::loss::CrossEntropyLossConfig;
 
 use crate::data::DevilBatch;

@@ -12,8 +12,9 @@ use burn::train::renderer::TrainingProgress;
 use burn::train::LearnerBuilder;
 use data::DevilBatcher;
 use data::DevilDataset;
-use model::Model;
-use model::PrecisionSetting;
+use devil_ml_model::Model;
+use devil_ml_model::Output;
+use devil_ml_model::PrecisionSetting;
 
 pub mod data;
 pub mod training;
@@ -64,7 +65,11 @@ impl MetricsRenderer for CustomRenderer {
 }
 
 /// Trains the model and outputs all of the byproducts to artifact_dir, using the specified backend device.
-pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, device: B::Device) {
+pub fn train<B: AutodiffBackend>(
+    artifact_dir: &str,
+    config: TrainingConfig,
+    device: B::Device,
+) -> Model<B> {
     create_artifact_dir(artifact_dir);
     config
         .save(format!("{artifact_dir}/config.json"))
@@ -79,12 +84,12 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
     let batcher_valid = DevilBatcher::<B::InnerBackend>::new(device.clone());
 
     // Get the train and test csv's as &str's
-    let train_input = include_str!("../data/train.csv");
-    let test_input = include_str!("../data/test.csv");
+    let train_input = include_str!(concat!(env!("OUT_DIR"), "/data/train.csv"));
+    let validation_input = include_str!(concat!(env!("OUT_DIR"), "/data/validation.csv"));
 
     // Instantiate the dataset from the text
     let dataset_train = DevilDataset::new(train_input);
-    let dataset_test = DevilDataset::new(test_input);
+    let dataset_validation = DevilDataset::new(validation_input);
 
     // Creates a DataLoader for the train dataset, it batches it into items to send to the worker,
     // after shuffling. Think of a worker as a seperate process/thread to run the model training on
@@ -95,11 +100,11 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
         .build(dataset_train);
 
     // Same thing as above, but for the validation data
-    let dataloader_test = DataLoaderBuilder::new(batcher_valid)
+    let dataloader_validation = DataLoaderBuilder::new(batcher_valid)
         .batch_size(config.batch_size)
         .shuffle(config.seed)
         .num_workers(config.num_workers)
-        .build(dataset_test);
+        .build(dataset_validation);
 
     // Creates a learner, which is then used to
     let learner = LearnerBuilder::new(artifact_dir)
@@ -128,13 +133,16 @@ pub fn train<B: AutodiffBackend>(artifact_dir: &str, config: TrainingConfig, dev
     );
 
     // Train the model, and output the fully trained model
-    let model_trained = learner.fit(dataloader_train, dataloader_test);
+    let model_trained = learner.fit(dataloader_train, dataloader_validation);
 
     // Setup full precision bin file recorder, to write the trained model to.
     let recorder = BinFileRecorder::<PrecisionSetting>::new();
 
     // Write the model using that recorder, and save results in the artifact_dir/model
     model_trained
+        .clone()
         .save_file(format!("{artifact_dir}/model"), &recorder)
         .expect("Trained model should be saved successfully");
+
+    model_trained
 }

@@ -5,8 +5,14 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-burn = { workspace = true, features = ["default", "train", "wgpu" ] }
+burn = { workspace = true, features = ["default", "train", "wgpu"] }
 csv = "1.3.0"
-model = { path = "../model" }
+devil-ml-model = { path = "../model" }
+rand = "0.8.5"
+serde = "1.0.210"
+
+[build-dependencies]
+devil-ml-model = { path = "../model" }
+csv = "1.3.0"
 rand = "0.8.5"
 serde = "1.0.210"

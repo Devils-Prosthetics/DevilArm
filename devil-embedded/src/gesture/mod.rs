@@ -4,7 +4,7 @@ use embassy_rp::pio::Instance;
 use crate::servo::Servo;
 
 // Gestures struct, which contains all the servos used to construct the arm.
-struct Gestures<
+pub struct Gestures<
     'd,
     T1: Instance,
     const SM1: usize,
@@ -28,7 +28,7 @@ impl<
         const SM3: usize,
     > Gestures<'d, T1, SM1, T2, SM2, T3, SM3>
 {
-    /// Create a new Geastures struct
+    /// Create a new Gestures struct
     pub fn new(
         thumb_servo: Servo<'d, T1, SM1>,
         fingers_servo: Servo<'d, T2, SM2>,

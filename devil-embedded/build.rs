@@ -8,6 +8,7 @@
 //! updating `memory.x` ensures a rebuild of the application with the
 //! new memory settings.
 
+use devil_ml_model::ARTIFACT_DIR;
 use std::env;
 use std::fs::File;
 use std::io::Write;
@@ -36,4 +37,6 @@ fn main() {
     println!("cargo:rustc-link-arg-bins=-Tlink.x");
     println!("cargo:rustc-link-arg-bins=-Tlink-rp.x");
     println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
+
+    println!("cargo:rustc-env=ARTIFACT_DIR={}", ARTIFACT_DIR);
 }

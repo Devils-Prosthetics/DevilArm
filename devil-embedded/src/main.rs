@@ -26,14 +26,39 @@ use servo::ServoBuilder;
 use log::*;
 use {defmt_rtt as _, panic_probe as _};
 
-use devil_ml::{self, softmax};
-
 use embedded_alloc::LlffHeap as Heap;
+
+use gesture::Gestures;
 
 mod gesture;
 mod sensor;
 mod serial;
 mod servo;
+
+use burn::prelude::*;
+pub use burn::tensor::activation::softmax;
+pub use devil_ml_model::Model;
+
+// Add the model into the program at compile time, this should be found in the build directory in /model/model.bin
+// It is put there by the build.rs script.
+static MODEL_BYTES: &[u8] = include_bytes!(concat!(env!("ARTIFACT_DIR"), "/model.bin"));
+
+static mut MODEL: Option<Model<Backend>> = None;
+
+pub struct Inferer {
+    model: Model<Backend>,
+}
+
+impl Inferer {
+    pub fn new() -> Self {
+        let model = Model::from_embedded(MODEL_BYTES);
+        Inferer { model }
+    }
+
+    pub fn infer(&self, item: Tensor<Backend, 1>) -> Tensor<Backend, 1> {
+        model::infer(item, &self.model)
+    }
+}
 
 // Sets up an allocator to be used, without this, you cannot put things on the heap, no vectors!
 #[global_allocator]
@@ -116,6 +141,12 @@ async fn main(spawner: Spawner) {
         .set_max_pulse_width(servo_min_pulse_width)
         .build();
 
+    let mut gestures = Gestures::new(thumb_servo, four_fingers_servo, arm_servo);
+
+    gestures.start();
+
+    // further integration of the gestures could involve a speed parameter or a transition time
+
     // spawn the task that reads the ADC value
     spawner
         .spawn(read_adc_value(
@@ -137,16 +168,8 @@ async fn main(spawner: Spawner) {
 
     let mut degree = 0;
 
-    thumb_servo.start();
-    arm_servo.start();
-    four_fingers_servo.start();
-
     loop {
         degree = (degree + 1) % 120;
-
-        thumb_servo.rotate(180);
-        arm_servo.rotate(180);
-        four_fingers_servo.rotate(180);
 
         info!("before inputs in loop");
         // Convert the u32 into f32, these really should be normalized between 0 and 1.
@@ -173,7 +196,7 @@ async fn main(spawner: Spawner) {
         info!("created tensor from data");
 
         // run inference on the tensor with the NdArray
-        let inference = devil_ml::infer(device, tensor);
+        let inference = devil_ml_model::infer(device, tensor);
 
         info!("ran inference on data");
 
@@ -190,10 +213,10 @@ async fn main(spawner: Spawner) {
             .into_iter()
             .enumerate() // Add index onto the probability
             .map(|(index, probability)| {
-                let output = devil_ml::model::Output::try_from(index); // the index is which output it is corresponding with
+                let output = devil_ml_model::Output::try_from(index); // the index is which output it is corresponding with
                 let (output, probability) = match output {
                     Ok(output) => (output, *probability), // Returns the output gesture and the probability
-                    Err(_) => (devil_ml::model::Output::Unknown, *probability), // This should theoretically never happen, but it's good to test
+                    Err(_) => (devil_ml_model::Output::Unknown, *probability), // This should theoretically never happen, but it's good to test
                 };
                 info!("{:?}: {:?}", output, probability); // Log the results
                 (output, probability) // return the results
@@ -202,6 +225,11 @@ async fn main(spawner: Spawner) {
             .unwrap();
 
         info!("Predicted gesture: {:?}\n\n\n", result.0); // Log the gesture
+        match result.0 {
+            devil_ml_model::Output::Flex => gestures.thumbs_up(),
+            devil_ml_model::Output::Relax => gestures.pinch(),
+            devil_ml_model::Output::Unknown => (),
+        }
 
         // Add in here the displaying of the gesture at a later date
     }
