@@ -69,7 +69,7 @@ pub fn train<B: AutodiffBackend>(
     artifact_dir: &str,
     config: TrainingConfig,
     device: B::Device,
-) -> Model<B> {
+) {
     create_artifact_dir(artifact_dir);
     config
         .save(format!("{artifact_dir}/config.json"))
@@ -140,9 +140,6 @@ pub fn train<B: AutodiffBackend>(
 
     // Write the model using that recorder, and save results in the artifact_dir/model
     model_trained
-        .clone()
         .save_file(format!("{artifact_dir}/model"), &recorder)
         .expect("Trained model should be saved successfully");
-
-    model_trained
 }

@@ -1,8 +1,6 @@
-import { listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
 import { Button } from "./Button";
 import { useConsoleStore } from "../stores/console";
-import { BaseDirectory, create } from "@tauri-apps/plugin-fs";
 import { SerialPort } from "tauri-plugin-serialplugin";
 import * as os from "@tauri-apps/plugin-os";
 
@@ -14,6 +12,9 @@ export const Terminal = ({ className, ...props }: { className: string }) => {
 	// Handle Start and Restart buttons
 	// Handle Start button
 	const connect = async () => {
+		if (serialPort) {
+			await serialPort.stopListening();
+		}
 		await SerialPort.closeAll();
 		const ports = await SerialPort.available_ports();
 
@@ -30,6 +31,13 @@ export const Terminal = ({ className, ...props }: { className: string }) => {
 			});
 
 			await serialPort.open();
+
+			await serialPort.startListening();
+
+			await serialPort.listen((data) => {
+				consoleState.add(data);
+			});
+
 
 			setSerialPort(serialPort);
 
@@ -52,7 +60,7 @@ export const Terminal = ({ className, ...props }: { className: string }) => {
 					<Button className='w-fit' onClick={handleRestart}>
 						Restart
 					</Button>
-					<Button className='w-fit' onClick={handleStart}>Start</Button>
+					<Button className='w-fit' onClick={connect}>Start</Button>
 				</div>
 			</div>
 			<div className="overflow-y-scroll h-full">
