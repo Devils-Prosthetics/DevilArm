@@ -5,8 +5,9 @@ use core::time::Duration;
 
 extern crate alloc;
 use burn::backend::NdArray;
+use burn::tensor::activation::softmax;
 use burn::tensor::Tensor;
-use devil_ml::model::MODEL_INPUTS;
+use devil_ml_model::MODEL_INPUTS;
 use embassy_executor::Spawner;
 use embassy_rp::adc::{Adc, Config as AdcConfig, InterruptHandler as AdcInterruptHandler};
 use embassy_rp::gpio;
@@ -19,6 +20,7 @@ use embassy_rp::{adc, bind_interrupts};
 use embassy_time::Timer;
 use gpio::{Level, Output};
 
+use infer::{Backend, BackendDeice, Inferer};
 use sensor::{read_adc_value, CHANNEL_AMPLITUDES};
 use serial::usb_task;
 use servo::ServoBuilder;
@@ -31,34 +33,10 @@ use embedded_alloc::LlffHeap as Heap;
 use gesture::Gestures;
 
 mod gesture;
+mod infer;
 mod sensor;
 mod serial;
 mod servo;
-
-use burn::prelude::*;
-pub use burn::tensor::activation::softmax;
-pub use devil_ml_model::Model;
-
-// Add the model into the program at compile time, this should be found in the build directory in /model/model.bin
-// It is put there by the build.rs script.
-static MODEL_BYTES: &[u8] = include_bytes!(concat!(env!("ARTIFACT_DIR"), "/model.bin"));
-
-static mut MODEL: Option<Model<Backend>> = None;
-
-pub struct Inferer {
-    model: Model<Backend>,
-}
-
-impl Inferer {
-    pub fn new() -> Self {
-        let model = Model::from_embedded(MODEL_BYTES);
-        Inferer { model }
-    }
-
-    pub fn infer(&self, item: Tensor<Backend, 1>) -> Tensor<Backend, 1> {
-        model::infer(item, &self.model)
-    }
-}
 
 // Sets up an allocator to be used, without this, you cannot put things on the heap, no vectors!
 #[global_allocator]
@@ -70,10 +48,6 @@ bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => UsbInterruptHandler<USB>;
     PIO0_IRQ_0 => PioInterruptHandler<PIO0>;
 });
-
-// We are going to use NdArray to run the machine learning backend.
-type Backend = NdArray<f32>;
-type BackendDeice = <Backend as burn::tensor::backend::Backend>::Device;
 
 // This is the main function for the program. Where execution starts.
 #[embassy_executor::main]
@@ -166,6 +140,8 @@ async fn main(spawner: Spawner) {
     // Initialize the NdArray backend
     let device = BackendDeice::default();
 
+    let inferer = Inferer::new(&device);
+
     let mut degree = 0;
 
     loop {
@@ -196,7 +172,7 @@ async fn main(spawner: Spawner) {
         info!("created tensor from data");
 
         // run inference on the tensor with the NdArray
-        let inference = devil_ml_model::infer(device, tensor);
+        let inference = inferer.infer(tensor);
 
         info!("ran inference on data");
 
@@ -225,11 +201,11 @@ async fn main(spawner: Spawner) {
             .unwrap();
 
         info!("Predicted gesture: {:?}\n\n\n", result.0); // Log the gesture
-        match result.0 {
-            devil_ml_model::Output::Flex => gestures.thumbs_up(),
-            devil_ml_model::Output::Relax => gestures.pinch(),
-            devil_ml_model::Output::Unknown => (),
-        }
+        // match result.0 {
+        //     devil_ml_model::Output::Flex => gestures.thumbs_up(),
+        //     devil_ml_model::Output::Relax => gestures.pinch(),
+        //     devil_ml_model::Output::Unknown => (),
+        // }
 
         // Add in here the displaying of the gesture at a later date
     }
