@@ -16,7 +16,7 @@ macro_rules! p {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let arm_data = include_str!("./data/savannah's arm v3.csv");
+    let arm_data = include_str!("./data/savannah's arm v4.csv");
     let mut parse_arm_data = parse_csv(arm_data);
 
     parse_arm_data.iter().take(10).for_each(|item| {
