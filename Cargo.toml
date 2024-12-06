@@ -32,8 +32,8 @@ burn-import = { version = "0.15.0" }
 directories = "5.0.1"
 
 [profile.release]
-strip = false
+strip = true
 lto = true
 codegen-units = 1
 panic = "abort"
-debug = true
+debug = false

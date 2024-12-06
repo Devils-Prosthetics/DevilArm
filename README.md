@@ -9,6 +9,10 @@ This repo contains all of the source code for the DevilArm, which is a prostheti
 3. Install `elf2uf2-rs` with `cargo install elf2uf2-rs --locked`
 4. Install `probe-rs` with `cargo install probe-rs --features=cli --locked`
 
+> [!NOTE]
+> You only need to have `thumbv6m-none-eabi`, `elf2uf2-rs`, and `probe-rs` for compiling the `devil-embedded`
+> project. Also `devil-trainer` may need some additional setup for you, view the README.md there to see any fixes.
+
 ## Architecture
 
 The repo is split into 3 seperate sections.

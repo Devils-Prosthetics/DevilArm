@@ -8,7 +8,7 @@ use tauri::AppHandle;
 #[tauri::command]
 fn upload_file_to_pi() -> Result<String, String> {
     // Specify the directory where you want to run the cargo command
-    let directory = "../../DevilArm/devil-embedded";
+    let directory = "../devil-embedded";
 
     // Run `cargo run --manifest-path /path/to/your/cargo/project/Cargo.toml`
     let output = Command::new("cargo")

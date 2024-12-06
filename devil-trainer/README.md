@@ -12,7 +12,7 @@ Run `unset GIO_MODULE_DIR` and `unset GTK_PATH` before usage
 ## Command to start
 npm run tauri dev
 
-## Setting up cargo run file path
-When trying to upload a file we use a cargo run in the rust code to execute the `DevilArm` library in order to properly execute this verify that the file path in `lib.rs` is correct it currently is under the assumption that you are running from `DevilArmTrainer/src-tauri` and goes back to Github and navigates to `src` in `devil-embedded`
+> [!IMPORTANT]
+> This is expected to be built and ran within this repo, otherwise devil-embedded will not compile. This
+> will need to change in the future.
 
-You will need to check that this `let directory = "../../DevilArm/devil-embedded/src";` is correct
