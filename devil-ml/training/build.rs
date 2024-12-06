@@ -125,7 +125,13 @@ pub fn parse_csv(input: &str) -> Vec<DevilItem> {
 
                 // parsing label to Output
                 let label = label.to_string();
-                let label = Output::from_str(&label).expect("Failed to parse label");
+                let label = match Output::from_str(&label) {
+                    Some(val) => val,
+                    None => {
+                        println!("Failed to parse label '{}'", label);
+                        continue;
+                    },
+                };
 
                 // Push the item to the vector
                 output.push(DevilItem {

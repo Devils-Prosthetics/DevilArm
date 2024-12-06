@@ -2,6 +2,7 @@
 name = "devil-ml-model"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
 license.workspace = true
 
 [dependencies]
@@ -9,4 +10,4 @@ burn = { workspace = true }
 num_enum = { version = "0.7.3", default-features = false }
 
 [build-dependencies]
-directories = "5.0.1"
+directories = { workspace = true }
